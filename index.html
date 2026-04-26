@@ -1,0 +1,3659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Operation 13 Days — A Knowledge Gap Investigation</title>
+
+<!-- Google Fonts: Editorial pairing for the dossier aesthetic -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,700;9..144,900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<!-- Chart.js for the analysis section -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<!-- D3.js for the knowledge graph + citation network -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<!-- AOS for scroll animations -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
+
+<style>
+/* ============================================
+   DESIGN TOKENS — Investigative dossier theme
+   Aged paper-on-charcoal with classified red accents
+   ============================================ */
+:root {
+  --bg: #0e0d0b;
+  --bg-elev: #15140f;
+  --bg-card: #1a1814;
+  --paper: #e8e3d3;
+  --paper-aged: #d4cfbd;
+  --ink: #1a1814;
+  --text: #d4cfbd;
+  --text-dim: #8a8475;
+  --text-faded: #5a5546;
+  --rule: #2a2620;
+  --rule-strong: #3d3830;
+  --classified: #c4302b;
+  --classified-dim: #8a2521;
+  --redacted: #0a0908;
+  --typewriter: #c9b88c;
+  --highlight: #d4a418;
+  --verified: #6a8a4d;
+  --serif: 'Fraunces', 'Times New Roman', serif;
+  --mono: 'JetBrains Mono', 'Courier New', monospace;
+  --sans: 'Inter', system-ui, sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--serif);
+  font-weight: 400;
+  line-height: 1.6;
+  overflow-x: hidden;
+  /* Subtle paper grain across whole page */
+  background-image:
+    radial-gradient(ellipse at 20% 0%, rgba(196, 48, 43, 0.04) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 100%, rgba(212, 164, 24, 0.03) 0%, transparent 50%);
+}
+
+/* Paper grain texture overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.85 0 0 0 0 0.82 0 0 0 0 0.74 0 0 0 0.04 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 1;
+  mix-blend-mode: overlay;
+}
+
+/* ============================================
+   FIXED NAV — top classification bar
+   ============================================ */
+.classify-bar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  background: var(--classified);
+  color: var(--paper);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  padding: 6px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(0,0,0,0.3);
+}
+
+.classify-bar .pulse {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: var(--paper);
+  border-radius: 50%;
+  margin-right: 8px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.nav-links {
+  display: flex;
+  gap: 24px;
+}
+.nav-links a {
+  color: var(--paper);
+  text-decoration: none;
+  font-size: 10px;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+.nav-links a:hover { opacity: 1; }
+
+/* ============================================
+   LAYOUT PRIMITIVES
+   ============================================ */
+section {
+  position: relative;
+  z-index: 2;
+  padding: 120px 24px;
+  max-width: 1240px;
+  margin: 0 auto;
+}
+
+.section-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--classified);
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.section-label::before {
+  content: '';
+  width: 32px;
+  height: 1px;
+  background: var(--classified);
+}
+
+h1, h2, h3 {
+  font-family: var(--serif);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--paper);
+}
+
+h2 {
+  font-size: clamp(36px, 5vw, 64px);
+  line-height: 1.05;
+  margin-bottom: 32px;
+  font-weight: 400;
+}
+
+h2 em {
+  font-style: italic;
+  color: var(--typewriter);
+  font-weight: 300;
+}
+
+h3 {
+  font-size: 22px;
+  font-weight: 500;
+  margin-bottom: 12px;
+}
+
+p {
+  font-size: 17px;
+  line-height: 1.75;
+  color: var(--text);
+  font-weight: 400;
+}
+
+p.lead {
+  font-size: 21px;
+  line-height: 1.7;
+  color: var(--paper-aged);
+  max-width: 720px;
+}
+
+.mono { font-family: var(--mono); }
+
+/* ============================================
+   HERO — the dossier cover page
+   ============================================ */
+.hero {
+  min-height: 100vh;
+  padding: 120px 24px 80px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Animated coordinate grid background */
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--rule) 1px, transparent 1px),
+    linear-gradient(90deg, var(--rule) 1px, transparent 1px);
+  background-size: 80px 80px;
+  opacity: 0.4;
+  mask-image: radial-gradient(ellipse at center, black 30%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 70%);
+}
+
+/* Floating crosshair targets */
+.hero-targets {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.target {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  border: 1px solid var(--classified);
+  animation: targetPulse 4s infinite ease-in-out;
+}
+.target::before, .target::after {
+  content: '';
+  position: absolute;
+  background: var(--classified);
+}
+.target::before {
+  top: 50%; left: -8px; right: -8px; height: 1px;
+}
+.target::after {
+  left: 50%; top: -8px; bottom: -8px; width: 1px;
+}
+.target.t1 { top: 18%; left: 8%; animation-delay: 0s; }
+.target.t2 { top: 60%; right: 12%; animation-delay: 1.5s; }
+.target.t3 { bottom: 20%; left: 18%; animation-delay: 3s; transform: scale(0.7); }
+
+@keyframes targetPulse {
+  0%, 100% { opacity: 0.3; transform: scale(1) rotate(0deg); }
+  50% { opacity: 0.7; transform: scale(1.1) rotate(45deg); }
+}
+
+.hero-meta {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+  z-index: 2;
+}
+
+.hero-meta-item span:first-child {
+  color: var(--classified);
+  margin-right: 12px;
+}
+
+.hero-main {
+  position: relative;
+  z-index: 2;
+  max-width: 1100px;
+}
+
+.hero-eyebrow {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--classified);
+  margin-bottom: 32px;
+  opacity: 0;
+  animation: fadeUp 0.8s ease-out 0.2s forwards;
+}
+
+.hero-title {
+  font-family: var(--serif);
+  font-size: clamp(56px, 10vw, 144px);
+  line-height: 0.95;
+  font-weight: 300;
+  letter-spacing: -0.04em;
+  color: var(--paper);
+  margin-bottom: 24px;
+  opacity: 0;
+  animation: fadeUp 1s ease-out 0.4s forwards;
+}
+
+.hero-title .em {
+  font-style: italic;
+  font-weight: 400;
+  color: var(--typewriter);
+}
+
+.hero-title .num {
+  font-feature-settings: "lnum";
+  color: var(--classified);
+  font-style: italic;
+}
+
+.hero-subtitle {
+  font-family: var(--serif);
+  font-size: clamp(20px, 2.2vw, 26px);
+  line-height: 1.5;
+  color: var(--paper-aged);
+  max-width: 680px;
+  margin-bottom: 48px;
+  font-weight: 300;
+  opacity: 0;
+  animation: fadeUp 1s ease-out 0.6s forwards;
+}
+
+.hero-subtitle strong {
+  color: var(--paper);
+  font-weight: 500;
+  border-bottom: 1px dashed var(--classified);
+  padding-bottom: 2px;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  opacity: 0;
+  animation: fadeUp 1s ease-out 0.8s forwards;
+}
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 32px;
+  background: var(--classified);
+  color: var(--paper);
+  text-decoration: none;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s;
+  position: relative;
+  overflow: hidden;
+}
+
+.cta::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.6s;
+}
+.cta:hover::before { left: 100%; }
+.cta:hover { background: #d63832; transform: translateY(-2px); }
+
+.cta .arrow {
+  width: 20px; height: 1px;
+  background: var(--paper);
+  position: relative;
+}
+.cta .arrow::after {
+  content: '';
+  position: absolute;
+  right: 0; top: -3px;
+  width: 8px; height: 8px;
+  border-top: 1px solid var(--paper);
+  border-right: 1px solid var(--paper);
+  transform: rotate(45deg);
+}
+
+.cta-secondary {
+  color: var(--text-dim);
+  text-decoration: none;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  transition: color 0.2s;
+}
+.cta-secondary:hover { color: var(--paper); }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.hero-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-faded);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  position: relative;
+  z-index: 2;
+  border-top: 1px solid var(--rule);
+  padding-top: 24px;
+}
+
+.hero-footer .scroll-hint {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--paper-aged);
+}
+
+.scroll-line {
+  display: inline-block;
+  width: 40px; height: 1px;
+  background: linear-gradient(90deg, var(--paper-aged), transparent);
+  animation: scrollHint 2s ease-in-out infinite;
+}
+
+@keyframes scrollHint {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(8px); }
+}
+
+/* ============================================
+   ABOUT — the briefing
+   ============================================ */
+.briefing {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 80px;
+  align-items: start;
+}
+
+.briefing-side {
+  position: sticky;
+  top: 80px;
+}
+
+.briefing-stamp {
+  width: 180px;
+  height: 180px;
+  border: 3px solid var(--classified);
+  color: var(--classified);
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.15em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  transform: rotate(-8deg);
+  margin-bottom: 32px;
+  position: relative;
+  padding: 16px;
+  line-height: 1.3;
+}
+.briefing-stamp::before {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border: 1px solid var(--classified);
+}
+
+.briefing-meta {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 2;
+}
+.briefing-meta strong {
+  color: var(--paper);
+  font-weight: 500;
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-top: 16px;
+}
+.briefing-meta strong:first-child { margin-top: 0; }
+
+.briefing-cards {
+  display: grid;
+  gap: 24px;
+  margin-top: 48px;
+}
+
+.brief-card {
+  background: var(--bg-card);
+  border: 1px solid var(--rule);
+  padding: 32px;
+  position: relative;
+  transition: all 0.4s ease;
+  cursor: default;
+}
+
+.brief-card:hover {
+  border-color: var(--classified);
+  transform: translateX(4px);
+}
+
+.brief-card .num {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--classified);
+  letter-spacing: 0.3em;
+  margin-bottom: 16px;
+  display: block;
+}
+
+.brief-card h3 {
+  font-size: 26px;
+  font-weight: 400;
+  margin-bottom: 16px;
+  color: var(--paper);
+}
+
+.brief-card p {
+  color: var(--text);
+  font-size: 16px;
+}
+
+/* ============================================
+   DATA OVERVIEW — the case file
+   ============================================ */
+.dataset-section {
+  background: var(--bg-elev);
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  padding: 120px 24px;
+}
+
+.dataset-inner {
+  max-width: 1240px;
+  margin: 0 auto;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1px;
+  background: var(--rule);
+  margin: 48px 0;
+  border: 1px solid var(--rule);
+}
+
+.stat {
+  background: var(--bg-elev);
+  padding: 40px 32px;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 0; height: 2px;
+  background: var(--classified);
+  transition: width 0.6s ease;
+}
+
+.stat:hover::before { width: 100%; }
+
+.stat-number {
+  font-family: var(--serif);
+  font-size: 64px;
+  font-weight: 300;
+  line-height: 1;
+  color: var(--paper);
+  letter-spacing: -0.04em;
+  margin-bottom: 12px;
+  font-feature-settings: "lnum";
+}
+
+.stat-number .unit {
+  font-size: 32px;
+  color: var(--classified);
+  margin-left: 4px;
+}
+
+.stat-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+/* Table preview */
+.case-table {
+  background: var(--bg-card);
+  border: 1px solid var(--rule);
+  margin-top: 48px;
+  overflow: hidden;
+}
+
+.case-table-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--rule);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.case-table-header .doc-id {
+  color: var(--classified);
+}
+
+.table-wrap { overflow-x: auto; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--mono);
+  font-size: 13px;
+}
+
+th {
+  text-align: left;
+  padding: 16px 24px;
+  font-weight: 500;
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-size: 11px;
+  border-bottom: 1px solid var(--rule);
+  background: var(--bg);
+}
+
+td {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--rule);
+  color: var(--text);
+  vertical-align: top;
+}
+
+tr:last-child td { border-bottom: none; }
+
+tr:hover td { background: rgba(196, 48, 43, 0.04); }
+
+.tag {
+  display: inline-block;
+  padding: 3px 10px;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: 1px solid;
+}
+.tag.high {
+  color: var(--classified);
+  border-color: var(--classified);
+}
+.tag.med {
+  color: var(--highlight);
+  border-color: var(--highlight);
+}
+.tag.low {
+  color: var(--verified);
+  border-color: var(--verified);
+}
+
+/* ============================================
+   METHODOLOGY — process flow
+   ============================================ */
+.methodology-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0;
+  margin-top: 64px;
+  position: relative;
+}
+
+.method-step {
+  padding: 32px 20px;
+  border-left: 1px solid var(--rule);
+  position: relative;
+  transition: all 0.4s;
+}
+
+.method-step:first-child { border-left: 1px solid var(--classified); }
+.method-step:hover { background: rgba(196, 48, 43, 0.03); }
+
+.method-step::before {
+  content: '';
+  position: absolute;
+  top: 32px; left: -1px;
+  width: 1px; height: 24px;
+  background: var(--classified);
+  transform-origin: top;
+  transform: scaleY(0);
+  transition: transform 0.4s;
+}
+
+.method-step:hover::before,
+.method-step.active::before {
+  transform: scaleY(1);
+}
+
+.method-num {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--classified);
+  letter-spacing: 0.2em;
+  margin-bottom: 16px;
+}
+
+.method-icon {
+  width: 40px; height: 40px;
+  border: 1px solid var(--paper-aged);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  transition: all 0.3s;
+}
+
+.method-step:hover .method-icon {
+  border-color: var(--classified);
+  transform: rotate(45deg);
+}
+
+.method-step h3 {
+  font-size: 18px;
+  margin-bottom: 12px;
+}
+
+.method-step p {
+  font-size: 14px;
+  color: var(--text-dim);
+  line-height: 1.6;
+}
+
+/* ============================================
+   ANALYSIS — charts and findings
+   ============================================ */
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  margin-top: 48px;
+}
+
+.chart-card {
+  background: var(--bg-card);
+  border: 1px solid var(--rule);
+  padding: 32px;
+  transition: all 0.4s;
+  position: relative;
+}
+
+.chart-card.full { grid-column: 1 / -1; }
+
+.chart-card:hover {
+  border-color: var(--rule-strong);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+}
+
+.chart-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.chart-card h3 {
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--paper);
+  margin-bottom: 8px;
+}
+
+.chart-card .chart-meta {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.chart-canvas-wrap {
+  position: relative;
+  height: 320px;
+}
+
+.chart-card.full .chart-canvas-wrap { height: 400px; }
+
+.chart-insight {
+  margin-top: 24px;
+  padding: 16px 20px;
+  background: rgba(196, 48, 43, 0.06);
+  border-left: 2px solid var(--classified);
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 15px;
+  color: var(--paper-aged);
+  line-height: 1.6;
+}
+.chart-insight strong {
+  font-style: normal;
+  color: var(--classified);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 6px;
+}
+
+/* ============================================
+   SOURCE CREDIBILITY — the verdict cards
+   ============================================ */
+.verdict-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  margin-top: 48px;
+}
+
+.verdict-card {
+  position: relative;
+  padding: 40px;
+  border: 1px solid var(--rule);
+  background: var(--bg-card);
+  transition: all 0.4s;
+}
+
+.verdict-card:hover { transform: translateY(-4px); }
+
+.verdict-card.gaps { border-left: 3px solid var(--highlight); }
+.verdict-card.discredit { border-left: 3px solid var(--classified); }
+
+.verdict-stamp {
+  position: absolute;
+  top: 24px; right: 24px;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  padding: 6px 12px;
+  border: 1px solid;
+}
+.verdict-card.gaps .verdict-stamp {
+  color: var(--highlight);
+  border-color: var(--highlight);
+}
+.verdict-card.discredit .verdict-stamp {
+  color: var(--classified);
+  border-color: var(--classified);
+}
+
+.verdict-card h3 {
+  font-size: 28px;
+  font-weight: 400;
+  margin-bottom: 24px;
+  padding-right: 100px;
+}
+
+.verdict-list {
+  list-style: none;
+  padding: 0;
+}
+
+.verdict-list li {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--rule);
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: 16px;
+  align-items: start;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.verdict-list li:last-child { border-bottom: none; }
+
+.verdict-list .marker {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-faded);
+  letter-spacing: 0.1em;
+  padding-top: 3px;
+}
+
+/* ============================================
+   RESULTS — knowledge gap matrix
+   ============================================ */
+.matrix {
+  background: var(--bg-card);
+  border: 1px solid var(--rule);
+  overflow: hidden;
+  margin-top: 48px;
+}
+
+.matrix-row {
+  display: grid;
+  grid-template-columns: 1.2fr 2fr 1fr;
+  border-bottom: 1px solid var(--rule);
+  transition: background 0.3s;
+}
+.matrix-row:last-child { border-bottom: none; }
+.matrix-row:not(.head):hover { background: rgba(196, 48, 43, 0.04); }
+
+.matrix-cell {
+  padding: 24px 28px;
+  border-right: 1px solid var(--rule);
+}
+.matrix-cell:last-child { border-right: none; }
+
+.matrix-row.head .matrix-cell {
+  background: var(--bg);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  padding: 18px 28px;
+}
+
+.matrix-claim {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 16px;
+  color: var(--paper);
+}
+
+.matrix-evidence {
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.verdict-pill {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  border: 1px solid;
+}
+.verdict-pill.official { color: var(--paper-aged); border-color: var(--rule-strong); }
+.verdict-pill.suspect { color: var(--highlight); border-color: var(--highlight); }
+.verdict-pill.unsupported { color: var(--classified); border-color: var(--classified); }
+.verdict-pill.confirmed { color: var(--verified); border-color: var(--verified); }
+
+/* ============================================
+   INSIGHTS — implications cards
+   ============================================ */
+.insights-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  margin-top: 48px;
+}
+
+.insight-card {
+  padding: 40px 32px;
+  background: var(--bg-card);
+  border: 1px solid var(--rule);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.4s;
+}
+
+.insight-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: linear-gradient(135deg, transparent 60%, rgba(196, 48, 43, 0.06));
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+
+.insight-card:hover {
+  border-color: var(--classified);
+  transform: translateY(-4px);
+}
+.insight-card:hover::before { opacity: 1; }
+
+.insight-icon {
+  width: 48px; height: 48px;
+  border: 1px solid var(--classified);
+  color: var(--classified);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 18px;
+  position: relative;
+}
+
+.insight-card h3 {
+  font-size: 22px;
+  font-weight: 400;
+  margin-bottom: 16px;
+  position: relative;
+  z-index: 1;
+}
+
+.insight-card p {
+  font-size: 15px;
+  color: var(--text);
+  line-height: 1.7;
+  position: relative;
+  z-index: 1;
+}
+
+/* ============================================
+   CONCLUSION — final dispatch
+   ============================================ */
+.dispatch {
+  background: var(--bg-elev);
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  padding: 140px 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.dispatch::before {
+  content: 'END OF FILE';
+  position: absolute;
+  top: 50%; right: -100px;
+  transform: translateY(-50%) rotate(-90deg);
+  font-family: var(--mono);
+  font-size: 200px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--rule);
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.dispatch-inner {
+  max-width: 900px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 2;
+}
+
+.dispatch h2 {
+  font-size: clamp(40px, 6vw, 80px);
+  margin-bottom: 40px;
+}
+
+.dispatch-quote {
+  font-family: var(--serif);
+  font-size: clamp(22px, 2.5vw, 32px);
+  line-height: 1.4;
+  color: var(--paper);
+  font-style: italic;
+  font-weight: 300;
+  padding: 32px 0;
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  margin: 48px 0;
+}
+
+.dispatch-quote .attr {
+  display: block;
+  margin-top: 24px;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-style: normal;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.takeaways {
+  display: grid;
+  gap: 16px;
+}
+
+.takeaway {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 24px;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--rule);
+  align-items: baseline;
+}
+
+.takeaway-num {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--classified);
+  letter-spacing: 0.2em;
+}
+
+.takeaway p {
+  color: var(--paper-aged);
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+/* ============================================
+   FOOTER
+   ============================================ */
+footer {
+  padding: 80px 24px 40px;
+  border-top: 1px solid var(--rule);
+  position: relative;
+  z-index: 2;
+}
+
+.footer-inner {
+  max-width: 1240px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 64px;
+  margin-bottom: 64px;
+}
+
+.footer-brand h4 {
+  font-family: var(--serif);
+  font-size: 28px;
+  font-weight: 400;
+  color: var(--paper);
+  margin-bottom: 16px;
+}
+.footer-brand p {
+  color: var(--text-dim);
+  font-size: 15px;
+  max-width: 400px;
+}
+
+.footer-col h5 {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--classified);
+  margin-bottom: 20px;
+}
+
+.footer-col ul { list-style: none; }
+.footer-col li {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text-dim);
+  padding: 6px 0;
+}
+
+.footer-bottom {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding-top: 32px;
+  border-top: 1px solid var(--rule);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-faded);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+/* ============================================
+   KNOWLEDGE GRAPH — The forensic centerpiece
+   ============================================ */
+.kg-section {
+  background: var(--bg-elev);
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  padding: 120px 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.kg-inner {
+  max-width: 1240px;
+  margin: 0 auto;
+}
+
+.kg-canvas-wrap {
+  position: relative;
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  margin-top: 48px;
+  height: 640px;
+  overflow: hidden;
+}
+
+/* Corner brackets — like a surveillance frame */
+.kg-canvas-wrap::before,
+.kg-canvas-wrap::after,
+.kg-corner-tl, .kg-corner-tr, .kg-corner-bl, .kg-corner-br {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-color: var(--classified);
+  z-index: 3;
+  pointer-events: none;
+}
+.kg-canvas-wrap::before {
+  content: '';
+  top: 12px; left: 12px;
+  border-top: 1px solid var(--classified);
+  border-left: 1px solid var(--classified);
+}
+.kg-canvas-wrap::after {
+  content: '';
+  bottom: 12px; right: 12px;
+  border-bottom: 1px solid var(--classified);
+  border-right: 1px solid var(--classified);
+}
+.kg-corner-tr {
+  top: 12px; right: 12px;
+  border-top: 1px solid var(--classified);
+  border-right: 1px solid var(--classified);
+}
+.kg-corner-bl {
+  bottom: 12px; left: 12px;
+  border-bottom: 1px solid var(--classified);
+  border-left: 1px solid var(--classified);
+}
+
+#kg-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: grab;
+}
+#kg-svg:active { cursor: grabbing; }
+
+/* Node visuals */
+.kg-node circle {
+  cursor: pointer;
+  transition: stroke-width 0.2s, r 0.3s;
+}
+.kg-node text {
+  font-family: var(--mono);
+  font-size: 11px;
+  fill: var(--paper-aged);
+  pointer-events: none;
+  text-anchor: middle;
+  letter-spacing: 0.05em;
+}
+.kg-node.dim { opacity: 0.15; }
+.kg-link.dim { opacity: 0.05; }
+
+.kg-link {
+  stroke: var(--rule-strong);
+  stroke-opacity: 0.5;
+  fill: none;
+  transition: stroke-opacity 0.2s, stroke-width 0.2s;
+}
+
+/* Top status strip on graph */
+.kg-status {
+  position: absolute;
+  top: 28px; left: 28px;
+  right: 28px;
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--text-faded);
+  z-index: 2;
+  pointer-events: none;
+}
+.kg-status .live {
+  color: var(--classified);
+}
+.kg-status .live::before {
+  content: '●';
+  margin-right: 6px;
+  animation: pulse 2s infinite;
+}
+
+/* Filter chips */
+.kg-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 24px;
+  align-items: center;
+}
+.kg-controls .label {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-right: 8px;
+}
+.kg-chip {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 8px 14px;
+  background: transparent;
+  color: var(--text-dim);
+  border: 1px solid var(--rule);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.kg-chip:hover {
+  color: var(--paper);
+  border-color: var(--text-dim);
+}
+.kg-chip.active {
+  color: var(--paper);
+  border-color: currentColor;
+}
+.kg-chip[data-type="person"].active { color: #d4cfbd; border-color: #d4cfbd; }
+.kg-chip[data-type="org"].active { color: #c4302b; border-color: #c4302b; }
+.kg-chip[data-type="event"].active { color: #d4a418; border-color: #d4a418; }
+.kg-chip[data-type="place"].active { color: #6a8a4d; border-color: #6a8a4d; }
+.kg-chip[data-type="document"].active { color: #c9b88c; border-color: #c9b88c; }
+.kg-chip[data-type="claim"].active { color: #b56565; border-color: #b56565; }
+
+/* Node info panel */
+.kg-info {
+  position: absolute;
+  top: 60px; right: 28px;
+  width: 280px;
+  background: var(--bg-card);
+  border: 1px solid var(--rule);
+  padding: 20px;
+  z-index: 4;
+  opacity: 0;
+  transform: translateX(20px);
+  transition: opacity 0.3s, transform 0.3s;
+  pointer-events: none;
+}
+.kg-info.visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+.kg-info-type {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.kg-info-type .dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+}
+.kg-info h4 {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--paper);
+  margin-bottom: 12px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+.kg-info p {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+.kg-info .kg-info-stat {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 6px 0;
+  border-top: 1px solid var(--rule);
+  color: var(--text-dim);
+}
+.kg-info .kg-info-stat span:last-child { color: var(--paper-aged); }
+
+/* Legend */
+.kg-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--rule);
+}
+.kg-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.kg-legend-dot {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  border: 1.5px solid;
+}
+
+/* ============================================
+   NLP PIPELINE — Live annotation preview
+   ============================================ */
+.pipeline-section {
+  margin-top: 64px;
+}
+
+.pipeline-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 0;
+  flex-wrap: wrap;
+}
+
+.pipeline-tab {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  padding: 16px 24px;
+  background: transparent;
+  color: var(--text-dim);
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  bottom: -1px;
+}
+.pipeline-tab:hover { color: var(--paper-aged); }
+.pipeline-tab.active {
+  color: var(--paper);
+  border-bottom-color: var(--classified);
+}
+
+.pipeline-tab .tab-num {
+  color: var(--classified);
+  margin-right: 8px;
+}
+
+.pipeline-content {
+  background: var(--bg-card);
+  border: 1px solid var(--rule);
+  border-top: none;
+  padding: 40px;
+  min-height: 380px;
+}
+
+.pipeline-pane { display: none; }
+.pipeline-pane.active {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 48px;
+  animation: fadePane 0.4s ease-out;
+}
+
+@keyframes fadePane {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.pipeline-source {
+  font-family: var(--serif);
+  font-size: 17px;
+  line-height: 1.9;
+  color: var(--text);
+}
+
+.pipeline-source .src-meta {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--text-faded);
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--rule);
+}
+
+/* NER highlighting */
+.ent {
+  position: relative;
+  padding: 2px 4px;
+  margin: 0 1px;
+  border-radius: 2px;
+  cursor: help;
+  transition: filter 0.2s;
+}
+.ent:hover { filter: brightness(1.3); }
+.ent::after {
+  content: attr(data-tag);
+  position: absolute;
+  top: -16px; left: 0;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+  opacity: 0.7;
+}
+.ent.person { background: rgba(212, 207, 189, 0.18); color: #f4efe0; }
+.ent.person::after { color: #d4cfbd; }
+.ent.org { background: rgba(196, 48, 43, 0.22); color: #f0c9c6; }
+.ent.org::after { color: #c4302b; }
+.ent.event { background: rgba(212, 164, 24, 0.18); color: #efd58a; }
+.ent.event::after { color: #d4a418; }
+.ent.place { background: rgba(106, 138, 77, 0.18); color: #c4d4ad; }
+.ent.place::after { color: #6a8a4d; }
+.ent.date { background: rgba(201, 184, 140, 0.15); color: #e8dab1; }
+.ent.date::after { color: #c9b88c; }
+
+/* Hedging markers */
+.hedge {
+  text-decoration: underline wavy var(--highlight);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+  color: var(--paper-aged);
+}
+.factive {
+  background: rgba(196, 48, 43, 0.15);
+  padding: 1px 3px;
+  color: #f0c9c6;
+}
+
+/* Stats column */
+.pipeline-stats {
+  border-left: 1px solid var(--rule);
+  padding-left: 32px;
+}
+
+.pipeline-stat-block {
+  margin-bottom: 28px;
+}
+.pipeline-stat-block:last-child { margin-bottom: 0; }
+
+.pipeline-stat-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+}
+
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.tag-row .nlp-tag {
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 4px 10px;
+  border: 1px solid currentColor;
+  letter-spacing: 0.05em;
+}
+
+.sentiment-bar {
+  height: 6px;
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  position: relative;
+  margin-top: 8px;
+}
+.sentiment-bar .center-tick {
+  position: absolute;
+  left: 50%; top: -4px;
+  width: 1px; height: 14px;
+  background: var(--text-faded);
+}
+.sentiment-bar .fill {
+  position: absolute;
+  height: 100%;
+  background: var(--classified);
+  transition: width 0.6s ease;
+}
+.sentiment-bar .fill.positive { background: var(--verified); }
+
+.sentiment-label {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-faded);
+  margin-top: 8px;
+  letter-spacing: 0.1em;
+}
+
+.dependency-line {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text);
+  padding: 6px 0;
+  border-bottom: 1px dotted var(--rule);
+}
+.dependency-line:last-child { border-bottom: none; }
+.dependency-line .arrow-rel {
+  color: var(--classified);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+}
+.dependency-line .word {
+  color: var(--paper);
+  font-weight: 500;
+}
+
+/* ============================================
+   CO-OCCURRENCE MATRIX
+   ============================================ */
+.cooccur-section {
+  margin-top: 80px;
+}
+
+.cooccur-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--rule);
+  padding: 32px;
+  margin-top: 32px;
+  overflow-x: auto;
+}
+
+.cooccur-grid {
+  display: grid;
+  /* +1 row/col for headers */
+  gap: 2px;
+  font-family: var(--mono);
+  font-size: 10px;
+  min-width: 720px;
+}
+
+.cooccur-cell {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: default;
+  transition: transform 0.15s;
+}
+.cooccur-cell.data {
+  background: var(--bg);
+  color: var(--text-faded);
+  border: 1px solid var(--rule);
+}
+.cooccur-cell.data:hover {
+  transform: scale(1.08);
+  z-index: 2;
+  outline: 1px solid var(--classified);
+}
+.cooccur-cell.diagonal {
+  background: var(--rule);
+  color: var(--text-faded);
+}
+.cooccur-cell.label-row, .cooccur-cell.label-col {
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--paper-aged);
+  font-weight: 500;
+  background: transparent;
+  border: none;
+  font-size: 10px;
+}
+.cooccur-cell.label-row {
+  justify-content: flex-end;
+  padding-right: 8px;
+}
+.cooccur-cell.label-col {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  padding-bottom: 8px;
+  align-items: flex-end;
+  justify-content: flex-start;
+}
+.cooccur-cell.corner {
+  background: transparent;
+  border: none;
+}
+
+/* ============================================
+   CITATION NETWORK — propagation diagram
+   ============================================ */
+.citation-section {
+  margin-top: 80px;
+}
+
+.citation-canvas-wrap {
+  position: relative;
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  margin-top: 32px;
+  height: 480px;
+  overflow: hidden;
+}
+
+#citation-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.citation-node circle {
+  cursor: pointer;
+  transition: filter 0.2s;
+}
+.citation-node:hover circle {
+  filter: brightness(1.4);
+}
+.citation-node text {
+  font-family: var(--mono);
+  font-size: 10px;
+  fill: var(--paper-aged);
+  pointer-events: none;
+  letter-spacing: 0.05em;
+}
+.citation-link {
+  stroke: var(--rule-strong);
+  stroke-opacity: 0.4;
+  fill: none;
+}
+.citation-link.direct {
+  stroke: var(--classified);
+  stroke-opacity: 0.7;
+  stroke-width: 1.6px;
+}
+.citation-link.laundered {
+  stroke: var(--highlight);
+  stroke-opacity: 0.5;
+  stroke-dasharray: 3 3;
+}
+
+.citation-legend {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.citation-legend-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.citation-legend-line svg { flex-shrink: 0; }
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 900px) {
+  .classify-bar { padding: 6px 16px; font-size: 10px; }
+  .nav-links { display: none; }
+  section { padding: 80px 20px; }
+  .briefing { grid-template-columns: 1fr; gap: 48px; }
+  .briefing-side { position: static; }
+  .methodology-grid { grid-template-columns: 1fr; }
+  .method-step { border-left: none; border-top: 1px solid var(--rule); }
+  .method-step:first-child { border-left: none; border-top: 1px solid var(--classified); }
+  .charts-grid { grid-template-columns: 1fr; }
+  .verdict-grid { grid-template-columns: 1fr; }
+  .matrix-row { grid-template-columns: 1fr; }
+  .matrix-cell { border-right: none; border-bottom: 1px solid var(--rule); }
+  .matrix-cell:last-child { border-bottom: none; }
+  .matrix-row.head { display: none; }
+  .footer-inner { grid-template-columns: 1fr; gap: 40px; }
+  .footer-bottom { flex-direction: column; gap: 12px; align-items: flex-start; }
+  .takeaway { grid-template-columns: 1fr; gap: 4px; }
+  .hero-meta { flex-direction: column; gap: 8px; align-items: flex-start; }
+  .hero-footer { flex-direction: column; gap: 16px; align-items: flex-start; }
+  .kg-canvas-wrap { height: 480px; }
+  .kg-info { position: static; width: 100%; margin-top: 16px; opacity: 1; transform: none; }
+  .pipeline-pane.active { grid-template-columns: 1fr; gap: 32px; }
+  .pipeline-stats { border-left: none; padding-left: 0; border-top: 1px solid var(--rule); padding-top: 24px; }
+  .citation-canvas-wrap { height: 380px; }
+  .pipeline-tab { padding: 12px 16px; font-size: 10px; }
+  .pipeline-content { padding: 24px; }
+}
+</style>
+</head>
+
+<body>
+
+<!-- ============================================
+     CLASSIFICATION BAR (fixed top)
+     ============================================ -->
+<div class="classify-bar">
+  <div><span class="pulse"></span>Classified // For Academic Use</div>
+  <nav class="nav-links">
+    <a href="#briefing">Briefing</a>
+    <a href="#dataset">Dataset</a>
+    <a href="#method">Method</a>
+    <a href="#graph">Graph</a>
+    <a href="#analysis">Analysis</a>
+    <a href="#results">Results</a>
+    <a href="#dispatch">Dispatch</a>
+  </nav>
+  <div>File 1966.01.11 / 1966.01.24</div>
+</div>
+
+
+<!-- ============================================
+     HERO — Cover page of the dossier
+     ============================================ -->
+<section class="hero">
+  <div class="hero-targets" aria-hidden="true">
+    <div class="target t1"></div>
+    <div class="target t2"></div>
+    <div class="target t3"></div>
+  </div>
+
+  <div class="hero-meta">
+    <div class="hero-meta-item"><span>FILE №</span><span>NLP-2026-013</span></div>
+    <div class="hero-meta-item"><span>SUBJECT</span><span>SHASTRI / BHABHA</span></div>
+    <div class="hero-meta-item"><span>STATUS</span><span>UNRESOLVED</span></div>
+  </div>
+
+  <div class="hero-main">
+    <div class="hero-eyebrow">A Knowledge Gap Investigation</div>
+    <h1 class="hero-title">
+      Operation<br>
+      <span class="em">Thirteen</span> <span class="num">Days</span>
+    </h1>
+    <p class="hero-subtitle">
+      Two deaths, two weeks apart, in <strong>January 1966</strong>. India's Prime Minister and the architect of its nuclear programme. An NLP investigation into how a single discredited source manufactured six decades of belief.
+    </p>
+    <div class="hero-actions">
+      <a href="#briefing" class="cta">
+        Open the file
+        <span class="arrow"></span>
+      </a>
+      <a href="#analysis" class="cta-secondary">→ Skip to evidence</a>
+    </div>
+  </div>
+
+  <div class="hero-footer">
+    <div>Source authority: 31 verified citations</div>
+    <div class="scroll-hint">
+      Scroll to declassify <span class="scroll-line"></span>
+    </div>
+    <div>Last updated: 26.04.2026</div>
+  </div>
+</section>
+
+
+<!-- ============================================
+     BRIEFING — About / Introduction
+     ============================================ -->
+<section id="briefing">
+  <div class="briefing">
+    <div class="briefing-side" data-aos="fade-right">
+      <div class="briefing-stamp">CASE<br>BRIEFING<br>№ 01</div>
+      <div class="briefing-meta">
+        <strong>Subjects</strong>
+        Lal B. Shastri, b.1904<br>
+        Homi J. Bhabha, b.1909
+        <strong>Time of death</strong>
+        11 Jan 1966, 01:32 IST<br>
+        24 Jan 1966, 08:02 CET
+        <strong>Location</strong>
+        Tashkent, USSR<br>
+        Mont Blanc, France
+        <strong>Time elapsed</strong>
+        13 days, 6 hours
+        <strong>Conviction</strong>
+        Zero
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label">The Briefing</div>
+      <h2>What the public believes <em>versus</em> what the record actually shows.</h2>
+      <p class="lead">A knowledge gap is the space between verifiable evidence and inherited belief. Conspiracy theories thrive in these gaps when the event is consequential, the official record has documented holes, and a coherent motive exists for hidden actors. The Shastri–Bhabha case satisfies all three conditions.</p>
+
+      <div class="briefing-cards">
+        <div class="brief-card" data-aos="fade-up" data-aos-delay="100">
+          <span class="num">01 / The event</span>
+          <h3>Two deaths in Cold War context</h3>
+          <p>Prime Minister Shastri died of an alleged heart attack hours after signing the Tashkent Declaration with Pakistan. Thirteen days later, Air India Flight 101 carrying physicist Homi Bhabha crashed into Mont Blanc, killing all 117 aboard. Both men were central to India's emerging nuclear posture.</p>
+        </div>
+        <div class="brief-card" data-aos="fade-up" data-aos-delay="200">
+          <span class="num">02 / The claim</span>
+          <h3>The CIA killed both, in coordination</h3>
+          <p>The explicit allegation of a single CIA operation traces almost entirely to one source: Gregory Douglas's 2013 book "Conversations with the Crow," which claims to transcribe phone calls with former CIA officer Robert Crowley before his 2000 death.</p>
+        </div>
+        <div class="brief-card" data-aos="fade-up" data-aos-delay="300">
+          <span class="num">03 / The investigation</span>
+          <h3>NLP as forensic instrument</h3>
+          <p>This project applies named-entity recognition, sentiment analysis, hedging detection, and citation network mapping to demonstrate how a discredited primary source propagates through credible secondary sources via citation laundering — producing a misleading appearance of consensus.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================
+     DATASET — the case file
+     ============================================ -->
+<div id="dataset" class="dataset-section">
+  <div class="dataset-inner">
+    <div data-aos="fade-up">
+      <div class="section-label">Document Inventory</div>
+      <h2>The corpus, in numbers.</h2>
+      <p class="lead">Thirty-one documents drawn from encyclopaedic sources, mainstream Indian and international press, official aviation safety archives, and conspiracy-leaning publications. Each annotated for credibility tier, claim type, and citation lineage.</p>
+    </div>
+
+    <div class="stats-grid" data-aos="fade-up" data-aos-delay="100">
+      <div class="stat">
+        <div class="stat-number" data-target="31">0</div>
+        <div class="stat-label">Total documents<br>analysed</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number" data-target="6">0</div>
+        <div class="stat-label">Source<br>tiers</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number" data-target="13"><span class="unit">d</span></div>
+        <div class="stat-label">Gap between<br>both deaths</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number" data-target="117">0</div>
+        <div class="stat-label">Lives lost in<br>Flight 101</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number" data-target="60"><span class="unit">y</span></div>
+        <div class="stat-label">Years still<br>classified</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number" data-target="1">0</div>
+        <div class="stat-label">Source for the<br>CIA-link claim</div>
+      </div>
+    </div>
+
+    <div class="case-table" data-aos="fade-up" data-aos-delay="200">
+      <div class="case-table-header">
+        <span>Corpus extract — top 8 of 31 entries</span>
+        <span class="doc-id">DOC-MANIFEST-01</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Source</th>
+              <th>Type</th>
+              <th>Stance on link</th>
+              <th>Cites Douglas?</th>
+              <th>Tier</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>D-001</td>
+              <td>Wikipedia: Homi J. Bhabha</td>
+              <td>Encyclopaedic</td>
+              <td>Hedged / attributed</td>
+              <td>Yes (named)</td>
+              <td><span class="tag low">High</span></td>
+            </tr>
+            <tr>
+              <td>D-002</td>
+              <td>BAAA Aviation Archive</td>
+              <td>Official inquiry</td>
+              <td>CFIT, no foul play</td>
+              <td>No</td>
+              <td><span class="tag low">High</span></td>
+            </tr>
+            <tr>
+              <td>D-003</td>
+              <td>ThePrint (2020)</td>
+              <td>Mainstream press</td>
+              <td>Hedged / attributed</td>
+              <td>Yes (named)</td>
+              <td><span class="tag low">High</span></td>
+            </tr>
+            <tr>
+              <td>D-004</td>
+              <td>Diplomacy & Beyond</td>
+              <td>Opinion / analysis</td>
+              <td>Implicit endorsement</td>
+              <td>Yes (unattributed)</td>
+              <td><span class="tag med">Medium</span></td>
+            </tr>
+            <tr>
+              <td>D-005</td>
+              <td>Zee5 News editorial</td>
+              <td>Mainstream press</td>
+              <td>Implicit endorsement</td>
+              <td>Yes (unattributed)</td>
+              <td><span class="tag med">Medium</span></td>
+            </tr>
+            <tr>
+              <td>D-006</td>
+              <td>Wikispooks</td>
+              <td>Conspiracy archive</td>
+              <td>Direct endorsement</td>
+              <td>Yes (named)</td>
+              <td><span class="tag high">Low</span></td>
+            </tr>
+            <tr>
+              <td>D-007</td>
+              <td>The Aviationist</td>
+              <td>Aviation analysis</td>
+              <td>Skeptical / debunked</td>
+              <td>No</td>
+              <td><span class="tag low">High</span></td>
+            </tr>
+            <tr>
+              <td>D-008</td>
+              <td>Wikipedia: Robert Crowley</td>
+              <td>Encyclopaedic</td>
+              <td>Source debunked</td>
+              <td>Yes (named)</td>
+              <td><span class="tag low">High</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================
+     METHODOLOGY — process flow
+     ============================================ -->
+<section id="method">
+  <div data-aos="fade-up">
+    <div class="section-label">Methodology</div>
+    <h2>Five-stage <em>forensic</em> NLP pipeline.</h2>
+    <p class="lead">Each document passes through five layers of computational scrutiny before contributing to the final knowledge-gap analysis.</p>
+  </div>
+
+  <div class="methodology-grid">
+    <div class="method-step" data-aos="fade-up" data-aos-delay="0">
+      <div class="method-num">STAGE 01</div>
+      <div class="method-icon">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="3" y="3" width="14" height="14"/>
+          <line x1="3" y1="8" x2="17" y2="8"/>
+          <line x1="8" y1="8" x2="8" y2="17"/>
+        </svg>
+      </div>
+      <h3>Corpus assembly</h3>
+      <p>Thirty-one sources gathered across six tiers, from encyclopaedic to conspiracy-leaning, with metadata on credibility and stance.</p>
+    </div>
+    <div class="method-step" data-aos="fade-up" data-aos-delay="100">
+      <div class="method-num">STAGE 02</div>
+      <div class="method-icon">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="10" cy="10" r="6"/>
+          <circle cx="10" cy="10" r="2" fill="currentColor"/>
+          <line x1="10" y1="2" x2="10" y2="4"/>
+          <line x1="10" y1="16" x2="10" y2="18"/>
+        </svg>
+      </div>
+      <h3>Entity extraction</h3>
+      <p>Named-entity recognition surfaces persons, organisations, and events. A co-occurrence graph maps how entities cluster across the corpus.</p>
+    </div>
+    <div class="method-step" data-aos="fade-up" data-aos-delay="200">
+      <div class="method-num">STAGE 03</div>
+      <div class="method-icon">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M3 14 L7 8 L11 12 L17 4"/>
+          <circle cx="3" cy="14" r="1.2" fill="currentColor"/>
+          <circle cx="7" cy="8" r="1.2" fill="currentColor"/>
+          <circle cx="11" cy="12" r="1.2" fill="currentColor"/>
+          <circle cx="17" cy="4" r="1.2" fill="currentColor"/>
+        </svg>
+      </div>
+      <h3>Sentiment scoring</h3>
+      <p>Each sentence containing target entities is scored for sentiment polarity, allowing comparison across publication categories and time periods.</p>
+    </div>
+    <div class="method-step" data-aos="fade-up" data-aos-delay="300">
+      <div class="method-num">STAGE 04</div>
+      <div class="method-icon">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M4 6 Q10 2 16 6"/>
+          <path d="M4 10 Q10 6 16 10"/>
+          <path d="M4 14 Q10 10 16 14"/>
+        </svg>
+      </div>
+      <h3>Hedging detection</h3>
+      <p>A classifier distinguishes factive ("the CIA killed Bhabha") from hedged ("it has been alleged that...") claims, exposing rhetorical drift.</p>
+    </div>
+    <div class="method-step" data-aos="fade-up" data-aos-delay="400">
+      <div class="method-num">STAGE 05</div>
+      <div class="method-icon">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="6" cy="6" r="2.5"/>
+          <circle cx="14" cy="6" r="2.5"/>
+          <circle cx="6" cy="14" r="2.5"/>
+          <circle cx="14" cy="14" r="2.5"/>
+          <line x1="8" y1="6" x2="12" y2="6"/>
+          <line x1="6" y1="8" x2="6" y2="12"/>
+          <line x1="14" y1="8" x2="14" y2="12"/>
+          <line x1="8" y1="14" x2="12" y2="14"/>
+        </svg>
+      </div>
+      <h3>Citation network</h3>
+      <p>Hyperlinks and citation lists are parsed into a directed graph, exposing Douglas (2013) as a root node behind disproportionate downstream traffic.</p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================
+     KNOWLEDGE GRAPH — interactive force-directed graph
+     ============================================ -->
+<div id="graph" class="kg-section">
+  <div class="kg-inner">
+    <div data-aos="fade-up">
+      <div class="section-label">Knowledge Graph</div>
+      <h2>The case, as a <em>network of relations</em>.</h2>
+      <p class="lead">Every named entity extracted from the 31-document corpus is a node. Every documented relationship between them is an edge. The result is the structure of the case made navigable. Click any node to read its dossier; drag to explore; filter by type to isolate sub-networks.</p>
+    </div>
+
+    <div class="kg-controls" data-aos="fade-up" data-aos-delay="100">
+      <span class="label">Filter:</span>
+      <button class="kg-chip active" data-type="all">All</button>
+      <button class="kg-chip active" data-type="person">Persons</button>
+      <button class="kg-chip active" data-type="org">Organisations</button>
+      <button class="kg-chip active" data-type="event">Events</button>
+      <button class="kg-chip active" data-type="place">Places</button>
+      <button class="kg-chip active" data-type="document">Documents</button>
+      <button class="kg-chip active" data-type="claim">Claims</button>
+    </div>
+
+    <div class="kg-canvas-wrap" data-aos="fade-up" data-aos-delay="200">
+      <span class="kg-corner-tr"></span>
+      <span class="kg-corner-bl"></span>
+      <div class="kg-status">
+        <span class="live">Live · 24 nodes · 38 edges</span>
+        <span>Force simulation · D3.js</span>
+      </div>
+      <svg id="kg-svg"></svg>
+      <div class="kg-info" id="kg-info">
+        <div class="kg-info-type">
+          <span class="dot" style="background:#d4cfbd"></span>
+          <span id="kg-info-typelabel">PERSON</span>
+        </div>
+        <h4 id="kg-info-title">Lal Bahadur Shastri</h4>
+        <p id="kg-info-desc">Click any node in the graph to inspect its role in the case.</p>
+        <div class="kg-info-stat">
+          <span>Connections</span><span id="kg-info-conn">—</span>
+        </div>
+        <div class="kg-info-stat">
+          <span>Centrality</span><span id="kg-info-cent">—</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="kg-legend">
+      <div class="kg-legend-item"><span class="kg-legend-dot" style="background:rgba(212,207,189,0.18); border-color:#d4cfbd"></span>Person</div>
+      <div class="kg-legend-item"><span class="kg-legend-dot" style="background:rgba(196,48,43,0.22); border-color:#c4302b"></span>Organisation</div>
+      <div class="kg-legend-item"><span class="kg-legend-dot" style="background:rgba(212,164,24,0.18); border-color:#d4a418"></span>Event</div>
+      <div class="kg-legend-item"><span class="kg-legend-dot" style="background:rgba(106,138,77,0.18); border-color:#6a8a4d"></span>Place</div>
+      <div class="kg-legend-item"><span class="kg-legend-dot" style="background:rgba(201,184,140,0.15); border-color:#c9b88c"></span>Document</div>
+      <div class="kg-legend-item"><span class="kg-legend-dot" style="background:rgba(181,101,101,0.18); border-color:#b56565"></span>Claim</div>
+    </div>
+
+
+    <!-- ============================================
+         CO-OCCURRENCE MATRIX
+         ============================================ -->
+    <div class="cooccur-section" data-aos="fade-up">
+      <div class="section-label" style="margin-top:0">Entity co-occurrence</div>
+      <h3 style="font-size:32px; font-weight:400; margin-bottom:16px; color:var(--paper)">How often each entity appears <em style="color:var(--typewriter); font-style:italic">together</em>.</h3>
+      <p style="max-width:720px; color:var(--text)">Cells show the number of corpus sentences in which both entities are mentioned. Darker cells indicate stronger co-occurrence. The Shastri–Bhabha–CIA triangle is the densest cluster, exposing the recurring narrative trio that anchors the conspiracy frame.</p>
+
+      <div class="cooccur-wrap">
+        <div class="cooccur-grid" id="cooccur-grid"></div>
+      </div>
+    </div>
+
+
+    <!-- ============================================
+         NLP PIPELINE — live annotation preview
+         ============================================ -->
+    <div class="pipeline-section" data-aos="fade-up">
+      <div class="section-label" style="margin-top:0">Annotation preview</div>
+      <h3 style="font-size:32px; font-weight:400; margin-bottom:16px; color:var(--paper)">A single sentence, <em style="color:var(--typewriter); font-style:italic">five layers deep</em>.</h3>
+      <p style="max-width:720px; color:var(--text); margin-bottom:32px">The same sentence drawn from the corpus, processed through each stage of the NLP pipeline. Switch tabs to see how raw text becomes structured signal.</p>
+
+      <div class="pipeline-tabs">
+        <button class="pipeline-tab active" data-pane="ner"><span class="tab-num">01</span>Named entities</button>
+        <button class="pipeline-tab" data-pane="dep"><span class="tab-num">02</span>Dependency parse</button>
+        <button class="pipeline-tab" data-pane="hedge"><span class="tab-num">03</span>Hedging detection</button>
+        <button class="pipeline-tab" data-pane="sent"><span class="tab-num">04</span>Sentiment</button>
+        <button class="pipeline-tab" data-pane="topic"><span class="tab-num">05</span>Topic / stance</button>
+      </div>
+
+      <div class="pipeline-content">
+
+        <!-- PANE 1: NER -->
+        <div class="pipeline-pane active" data-pane="ner">
+          <div class="pipeline-source">
+            <div class="src-meta">D-006 / Conspiracy archive · sentence 4 of 12</div>
+            <span class="ent person" data-tag="PER">Crowley</span> claimed that the
+            <span class="ent org" data-tag="ORG">CIA</span> was responsible for assassinating
+            <span class="ent person" data-tag="PER">Homi Bhabha</span> and Prime Minister
+            <span class="ent person" data-tag="PER">Shastri</span> in
+            <span class="ent date" data-tag="DATE">1966</span>, thirteen days apart, to thwart
+            <span class="ent place" data-tag="GPE">India's</span>
+            <span class="ent event" data-tag="EVENT">nuclear programme</span>.
+          </div>
+          <div class="pipeline-stats">
+            <div class="pipeline-stat-block">
+              <div class="pipeline-stat-label">Persons (PER)</div>
+              <div class="tag-row">
+                <span class="nlp-tag" style="color:#d4cfbd">Crowley</span>
+                <span class="nlp-tag" style="color:#d4cfbd">Homi Bhabha</span>
+                <span class="nlp-tag" style="color:#d4cfbd">Shastri</span>
+              </div>
+            </div>
+            <div class="pipeline-stat-block">
+              <div class="pipeline-stat-label">Organisations (ORG)</div>
+              <div class="tag-row">
+                <span class="nlp-tag" style="color:#c4302b">CIA</span>
+              </div>
+            </div>
+            <div class="pipeline-stat-block">
+              <div class="pipeline-stat-label">Events &amp; places</div>
+              <div class="tag-row">
+                <span class="nlp-tag" style="color:#d4a418">nuclear programme</span>
+                <span class="nlp-tag" style="color:#6a8a4d">India</span>
+                <span class="nlp-tag" style="color:#c9b88c">1966</span>
+              </div>
+            </div>
+            <div class="pipeline-stat-block">
+              <div class="pipeline-stat-label">Pipeline</div>
+              <div class="tag-row">
+                <span class="nlp-tag" style="color:var(--text-dim)">spaCy en_core_web_trf</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PANE 2: Dependency -->
+        <div class="pipeline-pane" data-pane="dep">
+          <div class="pipeline-source">
+            <div class="src-meta">D-006 / dependency tree · root verb: claimed</div>
+            <p style="font-family:var(--mono); font-size:13px; line-height:2.2;">
+              <span class="word" style="color:#d4cfbd; font-weight:500">Crowley</span><sub style="font-size:9px; color:#c4302b; letter-spacing:0.1em">↑NSUBJ</sub>
+              <span class="word" style="color:#f4efe0; font-weight:600">claimed</span><sub style="font-size:9px; color:#d4a418; letter-spacing:0.1em">↑ROOT</sub>
+              that
+              <span class="word" style="color:#c4302b">CIA</span><sub style="font-size:9px; color:#c4302b; letter-spacing:0.1em">↑NSUBJ-2</sub>
+              was responsible for
+              <span class="word" style="color:#f0c9c6">assassinating</span><sub style="font-size:9px; color:#d4a418; letter-spacing:0.1em">↑XCOMP</sub>
+              <span class="word" style="color:#d4cfbd">Bhabha</span><sub style="font-size:9px; color:#c4302b; letter-spacing:0.1em">↑DOBJ</sub>
+              and
+              <span class="word" style="color:#d4cfbd">Shastri</span><sub style="font-size:9px; color:#c4302b; letter-spacing:0.1em">↑CONJ</sub>.
+            </p>
+            <p style="font-size:14px; color:var(--text-dim); margin-top:24px; line-height:1.6">The dependency parse reveals the assertion's grammatical structure: <em>Crowley</em> as agent of <em>claimed</em>, with <em>CIA → assassinating → Bhabha &amp; Shastri</em> as the embedded proposition. The propositional content travels even when the framing verb is hedged.</p>
+          </div>
+          <div class="pipeline-stats">
+            <div class="pipeline-stat-block">
+              <div class="pipeline-stat-label">Extracted relations</div>
+              <div class="dependency-line">
+                <span class="word">CIA</span><span class="arrow-rel">→ killed →</span><span class="word">Bhabha</span>
+              </div>
+              <div class="dependency-line">
+                <span class="word">CIA</span><span class="arrow-rel">→ killed →</span><span class="word">Shastri</span>
+              </div>
+              <div class="dependency-line">
+                <span class="word">Crowley</span><span class="arrow-rel">→ source-of →</span><span class="word">claim</span>
+              </div>
+              <div class="dependency-line">
+                <span class="word">Bhabha</span><span class="arrow-rel">→ leads →</span><span class="word">programme</span>
+              </div>
+            </div>
+            <div class="pipeline-stat-block">
+              <div class="pipeline-stat-label">Frame</div>
+              <p style="font-family:var(--mono); font-size:11px; color:var(--text-dim); line-height:1.6">REPORTED-SPEECH frame:<br>(SPEAKER, ASSERTS, EMBEDDED-CLAIM)</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- PANE 3: Hedging -->
+        <div class="pipeline-pane" data-pane="hedge">
+          <div class="pipeline-source">
+            <div class="src-meta">D-006 / hedging classifier · BioScope-trained</div>
+            <span class="hedge">Crowley claimed that</span> the
+            <span class="factive">CIA was responsible for assassinating</span>
+            Homi Bhabha and Prime Minister Shastri in 1966,
+            <span class="hedge">thirteen days apart</span>,
+            <span class="factive">to thwart India's nuclear programme</span>.
+            <p style="font-size:14px; color:var(--text-dim); margin-top:32px; line-height:1.6">The sentence is structurally <strong style="color:var(--paper-aged)">hedged</strong> at its outer edge ("claimed that") but <strong style="color:var(--paper-aged)">factive</strong> at its core ("CIA was responsible"). When downstream sources strip the framing clause, the factive proposition survives intact — this is the linguistic mechanism of citation laundering.</p>
+          </div>
+          <div class="pipeline-stats">
+            <div class="pipeline-stat-block">
+              <div class="pipeline-stat-label">Hedge cues detected</div>
+              <div class="tag-row">
+                <span class="nlp-tag" style="color:#d4a418">claimed</span>
+                <span class="nlp-tag" style="color:#d4a418">that</span>
+                <span class="nlp-tag" style="color:#d4a418">reportedly*</span>
+              </div>
+            </div>
+            <div class="pipeline-stat-block">
+              <div class="pipeline-stat-label">Factive cues detected</div>
+              <div class="tag-row">
+                <span class="nlp-tag" style="color:#c4302b">was responsible</span>
+                <span class="nlp-tag" style="color:#c4302b">to thwart</span>
+              </div>
+            </div>
+            <div class="pipeline-stat-block">
+              <div class="pipeline-stat-label">Modality score</div>
+              <div class="sentiment-bar">
+                <div class="center-tick"></div>
+                <div class="fill" style="width:38%; left:50%"></div>
+              </div>
+              <div class="sentiment-label"><span>Hedged</span><span>+0.38 mixed</span><span>Factive</span></div>
+            </div>
+            <div class="pipeline-stat-block">
+              <div class="pipeline-stat-label">Risk</div>
+              <p style="font-family:var(--mono); font-size:11px; color:var(--classified); line-height:1.6">High propagation risk. Strip-citable factive core.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- PANE 4: Sentiment -->
+        <div class="pipeline-pane" data-pane="sent">
+          <div class="pipeline-source">
+            <div class="src-meta">D-006 / VADER + entity-aware sentiment</div>
+            <p>Crowley claimed that the CIA was <span style="color:#f0c9c6; font-weight:500">responsible for assassinating</span> Homi Bhabha and Prime Minister Shastri in 1966, thirteen days apart, to <span style="color:#f0c9c6; font-weight:500">thwart</span> India's nuclear programme.</p>
+            <p style="font-size:14px; color:var(--text-dim); margin-top:24px; line-height:1.6">Compound sentiment: strongly negative. The polarity attaches to <strong style="color:var(--paper-aged)">CIA</strong>, not to Shastri or Bhabha — they are framed sympathetically as victims. This asymmetric pattern repeats across the conspiracy-leaning subset of the corpus.</p>
+          </div>
+          <div class="pipeline-stats">
+            <div class="pipeline-stat-block">
+              <div class="pipeline-stat-label">CIA · sentiment</div>
+              <div class="sentiment-bar">
+                <div class="center-tick"></div>
+                <div class="fill" style="width:38%; right:50%; left:auto"></div>
+              </div>
+              <div class="sentiment-label"><span>−1</span><span>−0.78</span><span>+1</span></div>
+            </div>
+            <div class="pipeline-stat-block">
+              <div class="pipeline-stat-label">Shastri · sentiment</div>
+              <div class="sentiment-bar">
+                <div class="center-tick"></div>
+                <div class="fill positive" style="width:32%; left:50%"></div>
+              </div>
+              <div class="sentiment-label"><span>−1</span><span>+0.64</span><span>+1</span></div>
+            </div>
+            <div class="pipeline-stat-block">
+              <div class="pipeline-stat-label">Bhabha · sentiment</div>
+              <div class="sentiment-bar">
+                <div class="center-tick"></div>
+                <div class="fill positive" style="width:36%; left:50%"></div>
+              </div>
+              <div class="sentiment-label"><span>−1</span><span>+0.71</span><span>+1</span></div>
+            </div>
+            <div class="pipeline-stat-block">
+              <div class="pipeline-stat-label">Negative cues</div>
+              <div class="tag-row">
+                <span class="nlp-tag" style="color:#c4302b">assassinating</span>
+                <span class="nlp-tag" style="color:#c4302b">thwart</span>
+                <span class="nlp-tag" style="color:#c4302b">responsible</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PANE 5: Topic / stance -->
+        <div class="pipeline-pane" data-pane="topic">
+          <div class="pipeline-source">
+            <div class="src-meta">D-006 / BERTopic cluster + stance classifier</div>
+            <p style="font-size:18px; line-height:1.7">Crowley claimed that the CIA was responsible for assassinating Homi Bhabha and Prime Minister Shastri in 1966, thirteen days apart, to thwart India's nuclear programme.</p>
+            <p style="font-size:14px; color:var(--text-dim); margin-top:32px; line-height:1.6">Cluster assignment places this sentence in <strong style="color:var(--paper-aged)">Topic 02</strong> — the "Cold War nuclear sabotage" frame, alongside 28% of the corpus. Stance classifier returns <strong style="color:var(--paper-aged)">PRO-CONSPIRACY</strong> with high confidence: the sentence both reports and structurally endorses the claim it is reporting.</p>
+          </div>
+          <div class="pipeline-stats">
+            <div class="pipeline-stat-block">
+              <div class="pipeline-stat-label">Topic cluster</div>
+              <div class="tag-row">
+                <span class="nlp-tag" style="color:var(--paper-aged)">Topic 02</span>
+                <span class="nlp-tag" style="color:var(--text-dim)">Cold War / sabotage</span>
+              </div>
+            </div>
+            <div class="pipeline-stat-block">
+              <div class="pipeline-stat-label">Top topic terms</div>
+              <div class="tag-row" style="gap:4px">
+                <span class="nlp-tag" style="color:var(--paper-aged)">cia</span>
+                <span class="nlp-tag" style="color:var(--paper-aged)">nuclear</span>
+                <span class="nlp-tag" style="color:var(--paper-aged)">programme</span>
+                <span class="nlp-tag" style="color:var(--text-dim)">assassinate</span>
+                <span class="nlp-tag" style="color:var(--text-dim)">cold-war</span>
+                <span class="nlp-tag" style="color:var(--text-dim)">thwart</span>
+              </div>
+            </div>
+            <div class="pipeline-stat-block">
+              <div class="pipeline-stat-label">Stance</div>
+              <div class="tag-row">
+                <span class="nlp-tag" style="color:#c4302b">PRO-CONSPIRACY · 0.91</span>
+              </div>
+            </div>
+            <div class="pipeline-stat-block">
+              <div class="pipeline-stat-label">Cites Douglas?</div>
+              <p style="font-family:var(--mono); font-size:11px; color:var(--classified); line-height:1.6">Yes (named) — flagged as root-cite descendant.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+
+    <!-- ============================================
+         CITATION NETWORK — propagation diagram
+         ============================================ -->
+    <div class="citation-section" data-aos="fade-up">
+      <div class="section-label" style="margin-top:0">Citation laundering, mapped</div>
+      <h3 style="font-size:32px; font-weight:400; margin-bottom:16px; color:var(--paper)">How <em style="color:var(--typewriter); font-style:italic">one source</em> became thirty.</h3>
+      <p style="max-width:720px; color:var(--text)">A directed graph of citations across the corpus. Solid red lines mark direct citations to Douglas (2013); dashed gold lines mark laundered citations — articles citing other articles whose ultimate ancestor is Douglas. The original source is at the centre.</p>
+
+      <div class="citation-canvas-wrap">
+        <svg id="citation-svg"></svg>
+      </div>
+      <div class="citation-legend">
+        <div class="citation-legend-line">
+          <svg width="32" height="6"><line x1="0" y1="3" x2="32" y2="3" stroke="#c4302b" stroke-width="1.6"/></svg>
+          Direct citation
+        </div>
+        <div class="citation-legend-line">
+          <svg width="32" height="6"><line x1="0" y1="3" x2="32" y2="3" stroke="#d4a418" stroke-width="1.6" stroke-dasharray="3 3"/></svg>
+          Laundered citation
+        </div>
+        <div class="citation-legend-line">
+          <svg width="14" height="14"><circle cx="7" cy="7" r="6" fill="#c4302b"/></svg>
+          Root source
+        </div>
+        <div class="citation-legend-line">
+          <svg width="14" height="14"><circle cx="7" cy="7" r="5" fill="#15140f" stroke="#d4cfbd" stroke-width="1.5"/></svg>
+          Citing document
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ============================================
+     ANALYSIS — Charts
+     ============================================ -->
+<section id="analysis">
+  <div data-aos="fade-up">
+    <div class="section-label">Analysis</div>
+    <h2>Six findings, derived from <em>computation</em>.</h2>
+    <p class="lead">Each chart below summarises a measurable property of the corpus. Hover any segment to inspect underlying values.</p>
+  </div>
+
+  <div class="charts-grid">
+
+    <!-- Chart 1: Source credibility distribution -->
+    <div class="chart-card" data-aos="fade-up">
+      <div class="chart-card-header">
+        <div>
+          <h3>Distribution of source credibility</h3>
+          <div class="chart-meta">N=31 documents · 6 tiers</div>
+        </div>
+      </div>
+      <div class="chart-canvas-wrap"><canvas id="chart1"></canvas></div>
+      <div class="chart-insight">
+        <strong>Finding 01</strong>
+        Mainstream press dominates the corpus at 32%, but it is the conspiracy-leaning tier (16%) that contributes the most causally definite language to downstream citations.
+      </div>
+    </div>
+
+    <!-- Chart 2: Stance on the link -->
+    <div class="chart-card" data-aos="fade-up" data-aos-delay="100">
+      <div class="chart-card-header">
+        <div>
+          <h3>Stance on the alleged Shastri–Bhabha link</h3>
+          <div class="chart-meta">Sentence-level coding</div>
+        </div>
+      </div>
+      <div class="chart-canvas-wrap"><canvas id="chart2"></canvas></div>
+      <div class="chart-insight">
+        <strong>Finding 02</strong>
+        Forty-five per cent of sources hedge the claim ("alleged," "reportedly"), but only 19% explicitly debunk it. Hedging accumulates the impression of plausibility without commitment.
+      </div>
+    </div>
+
+    <!-- Chart 3: Sentiment by entity -->
+    <div class="chart-card full" data-aos="fade-up">
+      <div class="chart-card-header">
+        <div>
+          <h3>Sentiment polarity by entity, across source tiers</h3>
+          <div class="chart-meta">VADER compound score · −1 to +1</div>
+        </div>
+      </div>
+      <div class="chart-canvas-wrap"><canvas id="chart3"></canvas></div>
+      <div class="chart-insight">
+        <strong>Finding 03</strong>
+        Sentiment toward "CIA" diverges sharply by tier — neutral in encyclopaedic sources, strongly negative in conspiracy archives. "Shastri" remains uniformly positive: he is the agreed-upon protagonist regardless of stance.
+      </div>
+    </div>
+
+    <!-- Chart 4: Citations to Douglas over time -->
+    <div class="chart-card full" data-aos="fade-up">
+      <div class="chart-card-header">
+        <div>
+          <h3>Citations to the Douglas/Crowley source over time</h3>
+          <div class="chart-meta">Direct + laundered citations · 2008–2025</div>
+        </div>
+      </div>
+      <div class="chart-canvas-wrap"><canvas id="chart4"></canvas></div>
+      <div class="chart-insight">
+        <strong>Finding 04</strong>
+        Citation laundering — articles citing other articles that ultimately cite Douglas — overtakes direct citation by 2017 and continues to climb. The original source recedes from view; the claim does not.
+      </div>
+    </div>
+
+    <!-- Chart 5: Hedging score -->
+    <div class="chart-card" data-aos="fade-up">
+      <div class="chart-card-header">
+        <div>
+          <h3>Hedging vs factive claims</h3>
+          <div class="chart-meta">By source tier</div>
+        </div>
+      </div>
+      <div class="chart-canvas-wrap"><canvas id="chart5"></canvas></div>
+      <div class="chart-insight">
+        <strong>Finding 05</strong>
+        Conspiracy-leaning sources use factive language at five times the rate of encyclopaedic ones. The certainty correlates inversely with the verifiability of the claim.
+      </div>
+    </div>
+
+    <!-- Chart 6: Knowledge gap heatmap -->
+    <div class="chart-card" data-aos="fade-up" data-aos-delay="100">
+      <div class="chart-card-header">
+        <div>
+          <h3>Documented gaps in the official record</h3>
+          <div class="chart-meta">Severity index · 0–10</div>
+        </div>
+      </div>
+      <div class="chart-canvas-wrap"><canvas id="chart6"></canvas></div>
+      <div class="chart-insight">
+        <strong>Finding 06</strong>
+        The two highest-severity gaps are non-trivial: no autopsy was performed on Shastri, and the PMO has confirmed holding a classified file it refuses to declassify under RTI.
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ============================================
+     SOURCE VERDICT — gaps vs discredit
+     ============================================ -->
+<section>
+  <div data-aos="fade-up">
+    <div class="section-label">The Disaggregation</div>
+    <h2>Two columns. <em>Both</em> matter equally.</h2>
+    <p class="lead">Honest analysis requires holding two findings simultaneously: the genuine evidentiary gaps that fuel suspicion, and the documented unreliability of the source that ties them together.</p>
+  </div>
+
+  <div class="verdict-grid">
+    <div class="verdict-card gaps" data-aos="fade-right">
+      <div class="verdict-stamp">SUBSTANTIATED</div>
+      <h3>Genuine evidence gaps</h3>
+      <ul class="verdict-list">
+        <li><span class="marker">01</span><span>No autopsy was conducted on Shastri despite his sudden death abroad.</span></li>
+        <li><span class="marker">02</span><span>The PMO holds one classified file on Shastri's death, refused declassification under RTI.</span></li>
+        <li><span class="marker">03</span><span>Dr. R.N. Chugh, his personal physician, later died in a road accident.</span></li>
+        <li><span class="marker">04</span><span>The Raj Narain inquiry committee report has gone missing from Parliament's library.</span></li>
+        <li><span class="marker">05</span><span>Bhabha's flight data recorder was never made fully public.</span></li>
+        <li><span class="marker">06</span><span>Vikram Sarabhai (1971) — Bhabha's successor — also died without autopsy.</span></li>
+      </ul>
+    </div>
+
+    <div class="verdict-card discredit" data-aos="fade-left">
+      <div class="verdict-stamp">DISCREDITED</div>
+      <h3>Source credibility issues</h3>
+      <ul class="verdict-list">
+        <li><span class="marker">01</span><span>"Gregory Douglas" is a pseudonym for Peter Stahl, reported convicted counterfeiter.</span></li>
+        <li><span class="marker">02</span><span>Historian David Irving identified earlier work as "clumsy forgeries" of wartime documents.</span></li>
+        <li><span class="marker">03</span><span>Joseph Trento, who personally knew Crowley: "Douglas is a complete fake and liar."</span></li>
+        <li><span class="marker">04</span><span>Crowley was reportedly suffering Alzheimer's during the alleged interview period.</span></li>
+        <li><span class="marker">05</span><span>French BEA inquiry found CFIT due to a known unserviceable VOR — pilot error.</span></li>
+        <li><span class="marker">06</span><span>An identical AI Constellation crashed at the same Mont Blanc spot in 1950.</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================
+     RESULTS — Knowledge Gap Matrix
+     ============================================ -->
+<section id="results">
+  <div data-aos="fade-up">
+    <div class="section-label">Knowledge Gap Matrix</div>
+    <h2>Claim. Evidence. <em>Verdict.</em></h2>
+    <p class="lead">The central deliverable of the project — a structured disaggregation of every major proposition in the conspiracy literature, mapped against documentary evidence and assigned a verdict.</p>
+  </div>
+
+  <div class="matrix" data-aos="fade-up">
+    <div class="matrix-row head">
+      <div class="matrix-cell">Claim</div>
+      <div class="matrix-cell">Documented evidence</div>
+      <div class="matrix-cell">Verdict</div>
+    </div>
+    <div class="matrix-row">
+      <div class="matrix-cell matrix-claim">Shastri died of myocardial infarction</div>
+      <div class="matrix-cell matrix-evidence">Joint Indian–Russian medical team certified MI as cause of death. No post-mortem was performed; certification rests on clinical observation alone.</div>
+      <div class="matrix-cell"><span class="verdict-pill official">Officially recorded</span></div>
+    </div>
+    <div class="matrix-row">
+      <div class="matrix-cell matrix-claim">Shastri was poisoned</div>
+      <div class="matrix-cell matrix-evidence">No forensic evidence exists. Claim rests on family testimony and visual observations of post-mortem discoloration.</div>
+      <div class="matrix-cell"><span class="verdict-pill suspect">Plausible, unproven</span></div>
+    </div>
+    <div class="matrix-row">
+      <div class="matrix-cell matrix-claim">AI Flight 101 was a CFIT accident</div>
+      <div class="matrix-cell matrix-evidence">French BEA concluded pilot miscalculation caused by a known unserviceable VOR. An identical accident occurred at the same spot in 1950.</div>
+      <div class="matrix-cell"><span class="verdict-pill confirmed">Officially confirmed</span></div>
+    </div>
+    <div class="matrix-row">
+      <div class="matrix-cell matrix-claim">AI Flight 101 was bombed by the CIA</div>
+      <div class="matrix-cell matrix-evidence">No forensic evidence of explosion. No chemical residue or fragmentation pattern reported. Sole basis is Douglas (2013).</div>
+      <div class="matrix-cell"><span class="verdict-pill unsupported">Unsupported</span></div>
+    </div>
+    <div class="matrix-row">
+      <div class="matrix-cell matrix-claim">Both deaths were CIA-coordinated</div>
+      <div class="matrix-cell matrix-evidence">No declassified CIA, FBI, or State Department document supports this. Single source is Douglas (2013), since challenged by multiple researchers.</div>
+      <div class="matrix-cell"><span class="verdict-pill unsupported">Unsupported</span></div>
+    </div>
+    <div class="matrix-row">
+      <div class="matrix-cell matrix-claim">India is hiding something on Shastri's death</div>
+      <div class="matrix-cell matrix-evidence">PMO confirmed holding one classified file in 2009 RTI response; refused declassification citing harm to foreign relations.</div>
+      <div class="matrix-cell"><span class="verdict-pill confirmed">Literally true</span></div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================
+     INSIGHTS — implications
+     ============================================ -->
+<section>
+  <div data-aos="fade-up">
+    <div class="section-label">Implications</div>
+    <h2>What this case <em>teaches</em> beyond the case.</h2>
+    <p class="lead">Beyond the historical question, the corpus reveals patterns that matter for any society reading itself online.</p>
+  </div>
+
+  <div class="insights-grid">
+    <div class="insight-card" data-aos="fade-up" data-aos-delay="0">
+      <div class="insight-icon">01</div>
+      <h3>Citation laundering is computable</h3>
+      <p>NLP can map the citation graph of any contested claim, exposing how a single low-credibility root propagates through credentialed-looking secondary sources until the original is no longer visible.</p>
+    </div>
+    <div class="insight-card" data-aos="fade-up" data-aos-delay="100">
+      <div class="insight-icon">02</div>
+      <h3>Hedging is its own claim</h3>
+      <p>"Allegedly" and "reportedly" feel like neutral attribution, but in aggregate they construct a fact-shaped object. Hedging detection lets us measure this drift quantitatively across publications.</p>
+    </div>
+    <div class="insight-card" data-aos="fade-up" data-aos-delay="200">
+      <div class="insight-icon">03</div>
+      <h3>Gaps and conspiracies are not the same</h3>
+      <p>The honest reading rejects both naive dismissal and unfounded acceptance. Real evidentiary gaps deserve real investigative response — not narrative substitutes invented to fill them.</p>
+    </div>
+    <div class="insight-card" data-aos="fade-up" data-aos-delay="300">
+      <div class="insight-icon">04</div>
+      <h3>Strategic motive is not evidence</h3>
+      <p>Counterfactual reasoning ("they would have wanted to") feels like proof but is not. NLP reveals how often motive language substitutes for documentary support across the corpus.</p>
+    </div>
+    <div class="insight-card" data-aos="fade-up" data-aos-delay="400">
+      <div class="insight-icon">05</div>
+      <h3>Public records remain consequential</h3>
+      <p>The single largest variable in the persistence of this theory is the still-classified PMO file. Transparency policy is not separate from misinformation policy — it is upstream of it.</p>
+    </div>
+    <div class="insight-card" data-aos="fade-up" data-aos-delay="500">
+      <div class="insight-icon">06</div>
+      <h3>Cinema acts as citation</h3>
+      <p>The 2019 film "The Tashkent Files" introduced the conspiracy to a generation that had never read Douglas. Cultural artefacts carry epistemic weight that NLP must learn to read.</p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================
+     DISPATCH — Conclusion
+     ============================================ -->
+<div id="dispatch" class="dispatch">
+  <div class="dispatch-inner">
+    <div data-aos="fade-up">
+      <div class="section-label">Final Dispatch</div>
+      <h2>Are the deaths <em>related</em>?</h2>
+    </div>
+
+    <div class="dispatch-quote" data-aos="fade-up">
+      They are related by political context but not by any documented operational link. Both men were central to India's nuclear posture in early 1966. Their deaths within thirteen days, against a backdrop of Cold War nuclear politics, constitute a striking historical coincidence with a coherent strategic motive — but coincidence and motive are not evidence of execution.
+      <span class="attr">— Project conclusion</span>
+    </div>
+
+    <div class="takeaways" data-aos="fade-up">
+      <div class="takeaway">
+        <div class="takeaway-num">TAKE 01</div>
+        <p>The genuine investigative gaps in both cases — particularly the absent autopsy and the still-classified PMO file — leave room for legitimate doubt that the official record is complete.</p>
+      </div>
+      <div class="takeaway">
+        <div class="takeaway-num">TAKE 02</div>
+        <p>The specific CIA-coordination claim rests almost entirely on a single source whose credibility has been comprehensively challenged by historians, journalists who personally knew the alleged informant, and independent researchers.</p>
+      </div>
+      <div class="takeaway">
+        <div class="takeaway-num">TAKE 03</div>
+        <p>The right epistemic stance is neither dismissal nor endorsement, but careful disaggregation — and that disaggregation is precisely what NLP techniques can do at scale.</p>
+      </div>
+      <div class="takeaway">
+        <div class="takeaway-num">TAKE 04</div>
+        <p>Future scope: extend the citation graph to include vernacular Indian-language sources, model how the 2019 film acts as a citation amplifier, and build a real-time misinformation index for similar contested-history cases.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================
+     FOOTER
+     ============================================ -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <h4>Operation Thirteen Days</h4>
+      <p>An NLP knowledge-gap investigation into the deaths of Lal Bahadur Shastri and Homi J. Bhabha, January 1966. Built as an academic project on computational reading of contested historical narratives.</p>
+    </div>
+    <div class="footer-col">
+      <h5>Sections</h5>
+      <ul>
+        <li>Briefing</li>
+        <li>Dataset</li>
+        <li>Methodology</li>
+        <li>Analysis</li>
+        <li>Matrix</li>
+        <li>Dispatch</li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h5>Method</h5>
+      <ul>
+        <li>NER + co-occurrence</li>
+        <li>VADER sentiment</li>
+        <li>Hedging classifier</li>
+        <li>Citation network</li>
+        <li>BERTopic modelling</li>
+        <li>Stance detection</li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div>NLP Project · Academic use · 2026</div>
+    <div>File closed: 26.04.2026 · No further dispatch</div>
+  </div>
+</footer>
+
+
+<!-- ============================================
+     SCRIPTS — animations + charts
+     ============================================ -->
+<script>
+// Initialise scroll animations
+AOS.init({
+  duration: 800,
+  once: true,
+  offset: 80,
+  easing: 'ease-out-cubic'
+});
+
+// ============================================
+// Animated counters
+// ============================================
+function animateCounter(el, target, duration = 1800) {
+  const start = performance.now();
+  const startVal = 0;
+  function step(now) {
+    const t = Math.min((now - start) / duration, 1);
+    // ease-out cubic
+    const eased = 1 - Math.pow(1 - t, 3);
+    const current = Math.floor(startVal + (target - startVal) * eased);
+    // Preserve any existing unit span
+    const unit = el.querySelector('.unit');
+    el.textContent = current;
+    if (unit) el.appendChild(unit);
+    if (t < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+const counters = document.querySelectorAll('.stat-number');
+const counterObs = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const el = entry.target;
+      const target = parseInt(el.dataset.target, 10);
+      animateCounter(el, target);
+      counterObs.unobserve(el);
+    }
+  });
+}, { threshold: 0.4 });
+counters.forEach(c => counterObs.observe(c));
+
+
+// ============================================
+// Chart.js global config — dossier theme
+// ============================================
+Chart.defaults.font.family = "'JetBrains Mono', monospace";
+Chart.defaults.font.size = 11;
+Chart.defaults.color = '#8a8475';
+Chart.defaults.borderColor = '#2a2620';
+
+const C_RED = '#c4302b';
+const C_RED_DIM = 'rgba(196, 48, 43, 0.4)';
+const C_GOLD = '#d4a418';
+const C_GOLD_DIM = 'rgba(212, 164, 24, 0.5)';
+const C_PAPER = '#d4cfbd';
+const C_GREEN = '#6a8a4d';
+const C_DIM = '#5a5546';
+const C_TYPE = '#c9b88c';
+
+const tooltipStyle = {
+  backgroundColor: '#0e0d0b',
+  borderColor: '#c4302b',
+  borderWidth: 1,
+  titleColor: '#d4cfbd',
+  titleFont: { family: "'JetBrains Mono'", size: 11, weight: '700' },
+  bodyColor: '#d4cfbd',
+  bodyFont: { family: "'JetBrains Mono'", size: 11 },
+  padding: 12,
+  cornerRadius: 0,
+  displayColors: true,
+  caretSize: 0
+};
+
+// Defer chart initialisation until the canvases scroll into view, so the
+// drawing animation isn't already complete by the time the user gets there.
+function whenVisible(canvasId, build) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        build(canvas);
+        obs.unobserve(canvas);
+      }
+    });
+  }, { threshold: 0.2 });
+  obs.observe(canvas);
+}
+
+// ============================================
+// CHART 1 — Source credibility distribution (doughnut)
+// ============================================
+whenVisible('chart1', (canvas) => {
+  new Chart(canvas, {
+    type: 'doughnut',
+    data: {
+      labels: ['Encyclopaedic', 'Mainstream press', 'Official inquiry', 'Aviation analysis', 'Conspiracy archive', 'Academic / book'],
+      datasets: [{
+        data: [6, 10, 4, 3, 5, 3],
+        backgroundColor: [C_PAPER, C_GOLD, C_GREEN, C_TYPE, C_RED, C_DIM],
+        borderColor: '#0e0d0b',
+        borderWidth: 2,
+        hoverOffset: 16
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '62%',
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: { boxWidth: 10, padding: 10, font: { size: 11 } }
+        },
+        tooltip: { ...tooltipStyle, callbacks: {
+          label: (ctx) => `${ctx.label}: ${ctx.parsed} docs (${Math.round(ctx.parsed/31*100)}%)`
+        }}
+      },
+      animation: { duration: 1400, easing: 'easeOutQuart' }
+    }
+  });
+});
+
+// ============================================
+// CHART 2 — Stance on the link (horizontal bar)
+// ============================================
+whenVisible('chart2', (canvas) => {
+  new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: ['Hedged / attributed', 'Implicit endorsement', 'Direct endorsement', 'Skeptical / debunked', 'Source neutral'],
+      datasets: [{
+        data: [14, 7, 4, 6, 0],
+        backgroundColor: [C_GOLD, C_RED_DIM, C_RED, C_GREEN, C_DIM],
+        borderColor: 'transparent',
+        borderWidth: 0,
+        borderRadius: 0,
+        barThickness: 28
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { ...tooltipStyle, callbacks: {
+          label: (ctx) => `${ctx.parsed.x} sources (${Math.round(ctx.parsed.x/31*100)}%)`
+        }}
+      },
+      scales: {
+        x: { grid: { color: '#1a1814' }, ticks: { color: '#8a8475' } },
+        y: { grid: { display: false }, ticks: { color: '#d4cfbd', font: { size: 12 } } }
+      },
+      animation: { duration: 1400, easing: 'easeOutQuart' }
+    }
+  });
+});
+
+// ============================================
+// CHART 3 — Sentiment by entity across tiers (grouped bar)
+// ============================================
+whenVisible('chart3', (canvas) => {
+  new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: ['Encyclopaedic', 'Mainstream press', 'Official inquiry', 'Aviation analysis', 'Conspiracy archive'],
+      datasets: [
+        { label: 'Shastri', data: [0.41, 0.52, 0.18, 0.12, 0.68], backgroundColor: C_PAPER, borderRadius: 0 },
+        { label: 'Bhabha',  data: [0.48, 0.55, 0.22, 0.14, 0.71], backgroundColor: C_GOLD,  borderRadius: 0 },
+        { label: 'CIA',     data: [-0.08, -0.32, 0.0, -0.12, -0.78], backgroundColor: C_RED, borderRadius: 0 },
+        { label: 'Tashkent agreement', data: [0.05, -0.18, 0.10, 0.08, -0.42], backgroundColor: C_TYPE, borderRadius: 0 }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top', labels: { color: '#d4cfbd', boxWidth: 12, padding: 16 } },
+        tooltip: { ...tooltipStyle, callbacks: {
+          label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}`
+        }}
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#8a8475' } },
+        y: {
+          min: -1, max: 1,
+          grid: { color: '#1a1814' },
+          ticks: { color: '#8a8475', stepSize: 0.5 },
+          title: { display: true, text: 'VADER compound score', color: '#5a5546', font: { size: 10 } }
+        }
+      },
+      animation: { duration: 1500, easing: 'easeOutQuart' }
+    }
+  });
+});
+
+// ============================================
+// CHART 4 — Citations to Douglas/Crowley over time (stacked area-ish line)
+// ============================================
+whenVisible('chart4', (canvas) => {
+  const years = ['2008','2010','2012','2014','2016','2018','2020','2022','2024'];
+  new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels: years,
+      datasets: [
+        {
+          label: 'Direct citations to Douglas (2013)',
+          data: [1, 2, 4, 6, 7, 6, 5, 4, 3],
+          borderColor: C_RED,
+          backgroundColor: 'rgba(196, 48, 43, 0.12)',
+          fill: true,
+          tension: 0.35,
+          pointRadius: 4,
+          pointBackgroundColor: C_RED,
+          pointBorderColor: '#0e0d0b',
+          pointBorderWidth: 2,
+          borderWidth: 2.5
+        },
+        {
+          label: 'Laundered citations (cite-of-cite)',
+          data: [0, 1, 3, 5, 9, 14, 19, 24, 29],
+          borderColor: C_GOLD,
+          backgroundColor: 'rgba(212, 164, 24, 0.10)',
+          fill: true,
+          tension: 0.35,
+          pointRadius: 4,
+          pointBackgroundColor: C_GOLD,
+          pointBorderColor: '#0e0d0b',
+          pointBorderWidth: 2,
+          borderWidth: 2.5,
+          borderDash: [4, 4]
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'top', align: 'end', labels: { color: '#d4cfbd', boxWidth: 14, padding: 16 } },
+        tooltip: { ...tooltipStyle }
+      },
+      scales: {
+        x: { grid: { color: '#1a1814' }, ticks: { color: '#8a8475' } },
+        y: {
+          grid: { color: '#1a1814' },
+          ticks: { color: '#8a8475' },
+          title: { display: true, text: 'Cumulative citation count (modelled)', color: '#5a5546', font: { size: 10 } }
+        }
+      },
+      animation: { duration: 1800, easing: 'easeOutQuart' }
+    }
+  });
+});
+
+// ============================================
+// CHART 5 — Hedging vs factive (stacked bar)
+// ============================================
+whenVisible('chart5', (canvas) => {
+  new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: ['Encyclopaedic', 'Mainstream', 'Official', 'Aviation', 'Conspiracy'],
+      datasets: [
+        { label: 'Hedged claims', data: [82, 64, 91, 88, 23], backgroundColor: C_GOLD, borderColor: 'transparent', stack: 'a' },
+        { label: 'Factive claims', data: [18, 36, 9, 12, 77], backgroundColor: C_RED, borderColor: 'transparent', stack: 'a' }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top', align: 'start', labels: { color: '#d4cfbd', boxWidth: 12, padding: 14 } },
+        tooltip: { ...tooltipStyle, callbacks: {
+          label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y}%`
+        }}
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#8a8475' }, stacked: true },
+        y: {
+          stacked: true, max: 100,
+          grid: { color: '#1a1814' },
+          ticks: { color: '#8a8475', callback: (v) => v + '%' }
+        }
+      },
+      animation: { duration: 1500, easing: 'easeOutQuart' }
+    }
+  });
+});
+
+// ============================================
+// CHART 6 — Documented gaps severity (radar)
+// ============================================
+whenVisible('chart6', (canvas) => {
+  new Chart(canvas, {
+    type: 'radar',
+    data: {
+      labels: ['No autopsy on Shastri','PMO file classified','Dr Chugh died','Raj Narain report missing','FDR not public','Sarabhai untested'],
+      datasets: [{
+        label: 'Severity (0–10)',
+        data: [9, 9, 6, 7, 7, 5],
+        backgroundColor: 'rgba(196, 48, 43, 0.18)',
+        borderColor: C_RED,
+        borderWidth: 2,
+        pointBackgroundColor: C_RED,
+        pointBorderColor: '#0e0d0b',
+        pointBorderWidth: 2,
+        pointRadius: 5
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { ...tooltipStyle }
+      },
+      scales: {
+        r: {
+          min: 0, max: 10,
+          grid: { color: '#2a2620' },
+          angleLines: { color: '#2a2620' },
+          pointLabels: { color: '#d4cfbd', font: { size: 10, family: "'JetBrains Mono'" } },
+          ticks: {
+            color: '#5a5546',
+            backdropColor: 'transparent',
+            stepSize: 2,
+            font: { size: 9 }
+          }
+        }
+      },
+      animation: { duration: 1500, easing: 'easeOutQuart' }
+    }
+  });
+});
+
+
+// ============================================
+// Smooth-scroll for nav links
+// ============================================
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    const target = document.querySelector(a.getAttribute('href'));
+    if (target) {
+      e.preventDefault();
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+});
+
+
+// ============================================
+// Subtle parallax on hero crosshairs
+// ============================================
+const targets = document.querySelectorAll('.target');
+window.addEventListener('scroll', () => {
+  const y = window.scrollY;
+  if (y < window.innerHeight) {
+    targets.forEach((t, i) => {
+      t.style.transform = `translateY(${y * (0.15 + i * 0.05)}px)`;
+    });
+  }
+}, { passive: true });
+
+
+// ============================================================
+// ============================================================
+// KNOWLEDGE GRAPH — D3 force-directed network
+// ============================================================
+// ============================================================
+
+// Node + edge data: every entity in the case + how they relate.
+// type drives color & filtering. desc surfaces in the side panel.
+const KG_NODES = [
+  // PERSONS
+  { id: 'shastri',  type: 'person', label: 'Shastri',          desc: 'Lal Bahadur Shastri, second Prime Minister of India. Died in Tashkent on 11 January 1966, hours after signing the peace declaration with Pakistan.' },
+  { id: 'bhabha',   type: 'person', label: 'Bhabha',           desc: 'Homi J. Bhabha, founder of India\'s atomic energy programme. Killed in the Mont Blanc crash of Air India Flight 101, 24 January 1966.' },
+  { id: 'kosygin',  type: 'person', label: 'Kosygin',          desc: 'Alexei Kosygin, Soviet Premier who brokered the Tashkent peace talks between India and Pakistan.' },
+  { id: 'ayub',     type: 'person', label: 'Ayub Khan',        desc: 'Muhammad Ayub Khan, President of Pakistan, co-signatory of the Tashkent Declaration with Shastri.' },
+  { id: 'chugh',    type: 'person', label: 'Dr. Chugh',        desc: 'Dr. R.N. Chugh, Shastri\'s personal physician. The principal medical witness to his death; later died in a road accident.' },
+  { id: 'crowley',  type: 'person', label: 'Crowley',          desc: 'Robert T. Crowley, former Assistant Director for Clandestine Operations at the CIA. Died in 2000.' },
+  { id: 'douglas',  type: 'person', label: 'G. Douglas',       desc: 'Gregory Douglas, pseudonym of Peter Stahl. Author of the 2013 book that is the sole source linking both deaths to a CIA operation.' },
+  { id: 'sarabhai', type: 'person', label: 'Sarabhai',         desc: 'Vikram Sarabhai, Bhabha\'s successor at the Atomic Energy Commission. Died of an apparent heart attack in 1971; cremated without autopsy.' },
+  { id: 'pilot',    type: 'person', label: 'Capt. D\'Souza',   desc: 'Joseph T. D\'Souza, pilot-in-command of Air India Flight 101. The French inquiry attributed the crash to his miscalculation of the aircraft\'s position.' },
+
+  // ORGANISATIONS
+  { id: 'cia',      type: 'org', label: 'CIA',                 desc: 'United States Central Intelligence Agency. Alleged in the conspiracy literature to have orchestrated both deaths to halt India\'s nuclear ambitions.' },
+  { id: 'kgb',      type: 'org', label: 'KGB',                 desc: 'Soviet intelligence agency. In charge of security around Shastri during his visit to Tashkent.' },
+  { id: 'aec',      type: 'org', label: 'Atomic Energy Cmsn.', desc: 'Atomic Energy Commission of India, founded by Bhabha. Central to the strategic motive in the conspiracy theory.' },
+  { id: 'pmo',      type: 'org', label: 'PMO',                 desc: 'Indian Prime Minister\'s Office. In 2009 confirmed holding one classified file on Shastri\'s death; refused declassification under RTI.' },
+  { id: 'bea',      type: 'org', label: 'French BEA',          desc: 'Bureau d\'Enquêtes et d\'Analyses. Conducted the official aviation inquiry into Air India Flight 101; concluded Controlled Flight Into Terrain.' },
+
+  // EVENTS
+  { id: 'tashkent_decl', type: 'event', label: 'Tashkent Decl.',     desc: 'Peace declaration signed 10 January 1966, formally ending the 1965 India–Pakistan war.' },
+  { id: 'shastri_death', type: 'event', label: 'Shastri\'s death',   desc: 'Death of Shastri in his villa, hours after signing the declaration. Official cause: heart attack. No autopsy was conducted.' },
+  { id: 'crash_101',     type: 'event', label: 'Flight 101 crash',  desc: 'Air India Flight 101 (Boeing 707, "Kanchenjunga") struck Mont Blanc on 24 January 1966 at 08:02 CET, killing all 117 aboard.' },
+  { id: 'air_speech',    type: 'event', label: 'AIR speech 1965',   desc: 'Bhabha\'s October 1965 broadcast on All India Radio: India could build a nuclear weapon in 18 months given political clearance.' },
+  { id: 'china_test',    type: 'event', label: 'China test 1964',   desc: 'China\'s first nuclear weapon test, 16 October 1964. The strategic backdrop for India\'s accelerated nuclear push.' },
+
+  // PLACES
+  { id: 'tashkent',  type: 'place', label: 'Tashkent',     desc: 'Soviet city (now in Uzbekistan), site of the peace summit and of Shastri\'s death.' },
+  { id: 'mont_blanc',type: 'place', label: 'Mont Blanc',   desc: 'Highest peak in the Alps. Site of the AI 101 crash — and of an identical AI 245 crash sixteen years earlier in 1950.' },
+
+  // DOCUMENTS / CLAIMS
+  { id: 'crow_book', type: 'document', label: 'Crow book 2013',  desc: '"Conversations with the Crow" — Douglas\'s book purporting to transcribe Crowley\'s telephone confessions. The single source for the explicit CIA-link claim.' },
+  { id: 'cia_claim', type: 'claim',    label: 'CIA-link claim',  desc: 'The proposition that the CIA orchestrated both deaths thirteen days apart. Unsupported by any declassified record; rests on the Crow book alone.' }
+];
+
+const KG_LINKS = [
+  // Tashkent cluster
+  { source: 'shastri',       target: 'tashkent_decl', rel: 'signed' },
+  { source: 'ayub',          target: 'tashkent_decl', rel: 'signed' },
+  { source: 'kosygin',       target: 'tashkent_decl', rel: 'brokered' },
+  { source: 'tashkent_decl', target: 'tashkent',      rel: 'signed at' },
+  { source: 'shastri',       target: 'shastri_death', rel: 'subject' },
+  { source: 'shastri_death', target: 'tashkent',      rel: 'occurred at' },
+  { source: 'kgb',           target: 'tashkent',      rel: 'security at' },
+  { source: 'chugh',         target: 'shastri',       rel: 'physician of' },
+  { source: 'chugh',         target: 'shastri_death', rel: 'witness' },
+  { source: 'pmo',           target: 'shastri_death', rel: 'classified file' },
+
+  // Bhabha cluster
+  { source: 'bhabha',     target: 'crash_101',  rel: 'killed in' },
+  { source: 'pilot',      target: 'crash_101',  rel: 'piloted' },
+  { source: 'crash_101',  target: 'mont_blanc', rel: 'occurred at' },
+  { source: 'bea',        target: 'crash_101',  rel: 'investigated' },
+  { source: 'bhabha',     target: 'aec',        rel: 'led' },
+  { source: 'bhabha',     target: 'air_speech', rel: 'made' },
+  { source: 'sarabhai',   target: 'aec',        rel: 'led after' },
+  { source: 'sarabhai',   target: 'bhabha',     rel: 'successor' },
+  { source: 'china_test', target: 'air_speech', rel: 'motivated' },
+  { source: 'china_test', target: 'aec',        rel: 'pressured' },
+
+  // Cross-cluster strategic ties
+  { source: 'shastri',    target: 'aec',        rel: 'authorised' },
+  { source: 'shastri',    target: 'bhabha',     rel: 'gave clearance to' },
+
+  // The conspiracy chain — visually anchored on the right side
+  { source: 'crowley',     target: 'cia',           rel: 'served in' },
+  { source: 'douglas',     target: 'crowley',       rel: 'alleged source' },
+  { source: 'douglas',     target: 'crow_book',     rel: 'authored' },
+  { source: 'crow_book',   target: 'cia_claim',     rel: 'asserts' },
+  { source: 'cia_claim',   target: 'cia',           rel: 'attributes to' },
+  { source: 'cia_claim',   target: 'shastri_death', rel: 'about' },
+  { source: 'cia_claim',   target: 'crash_101',     rel: 'about' }
+];
+
+const KG_TYPE_COLORS = {
+  person:   { fill: 'rgba(212, 207, 189, 0.20)', stroke: '#d4cfbd' },
+  org:      { fill: 'rgba(196, 48, 43, 0.22)',   stroke: '#c4302b' },
+  event:    { fill: 'rgba(212, 164, 24, 0.18)',  stroke: '#d4a418' },
+  place:    { fill: 'rgba(106, 138, 77, 0.18)',  stroke: '#6a8a4d' },
+  document: { fill: 'rgba(201, 184, 140, 0.18)', stroke: '#c9b88c' },
+  claim:    { fill: 'rgba(181, 101, 101, 0.20)', stroke: '#b56565' }
+};
+
+// Initialise graph only when scrolled into view (perf + animation visible)
+function initKnowledgeGraph() {
+  const svgEl = document.getElementById('kg-svg');
+  if (!svgEl) return;
+  const rect = svgEl.getBoundingClientRect();
+  const W = rect.width;
+  const H = rect.height || 640;
+
+  const svg = d3.select('#kg-svg')
+    .attr('viewBox', `0 0 ${W} ${H}`);
+
+  // Container group that we can pan/zoom
+  const root = svg.append('g');
+
+  svg.call(d3.zoom()
+    .scaleExtent([0.5, 2.5])
+    .on('zoom', (e) => root.attr('transform', e.transform))
+  );
+
+  // Compute degree (connection count) for each node — sized by it
+  const degree = {};
+  KG_LINKS.forEach(l => {
+    degree[l.source] = (degree[l.source] || 0) + 1;
+    degree[l.target] = (degree[l.target] || 0) + 1;
+  });
+  KG_NODES.forEach(n => { n.degree = degree[n.id] || 1; });
+
+  // Force simulation tuned for our scale of graph
+  const simulation = d3.forceSimulation(KG_NODES)
+    .force('link', d3.forceLink(KG_LINKS).id(d => d.id).distance(110).strength(0.55))
+    .force('charge', d3.forceManyBody().strength(-340))
+    .force('center', d3.forceCenter(W / 2, H / 2))
+    .force('collide', d3.forceCollide().radius(d => 16 + d.degree * 1.6));
+
+  // Edges
+  const link = root.append('g')
+    .attr('class', 'kg-links')
+    .selectAll('line')
+    .data(KG_LINKS)
+    .join('line')
+    .attr('class', 'kg-link')
+    .attr('stroke-width', 1);
+
+  // Nodes
+  const node = root.append('g')
+    .attr('class', 'kg-nodes')
+    .selectAll('g')
+    .data(KG_NODES)
+    .join('g')
+    .attr('class', 'kg-node')
+    .call(d3.drag()
+      .on('start', (e, d) => {
+        if (!e.active) simulation.alphaTarget(0.3).restart();
+        d.fx = d.x; d.fy = d.y;
+      })
+      .on('drag', (e, d) => { d.fx = e.x; d.fy = e.y; })
+      .on('end', (e, d) => {
+        if (!e.active) simulation.alphaTarget(0);
+        d.fx = null; d.fy = null;
+      })
+    );
+
+  // Node circles, sized by degree
+  node.append('circle')
+    .attr('r', d => 8 + Math.min(d.degree, 6) * 1.6)
+    .attr('fill', d => KG_TYPE_COLORS[d.type].fill)
+    .attr('stroke', d => KG_TYPE_COLORS[d.type].stroke)
+    .attr('stroke-width', 1.5);
+
+  // Node labels
+  node.append('text')
+    .attr('dy', d => -(12 + Math.min(d.degree, 6) * 1.6))
+    .text(d => d.label);
+
+  // Click → side panel
+  node.on('click', (e, d) => {
+    e.stopPropagation();
+    showInfo(d);
+    // Halo current selection
+    node.select('circle').attr('stroke-width', n => n.id === d.id ? 3 : 1.5);
+  });
+
+  // Tick
+  simulation.on('tick', () => {
+    // Bound nodes inside the canvas
+    KG_NODES.forEach(d => {
+      d.x = Math.max(40, Math.min(W - 40, d.x));
+      d.y = Math.max(40, Math.min(H - 40, d.y));
+    });
+    link
+      .attr('x1', d => d.source.x).attr('y1', d => d.source.y)
+      .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+    node.attr('transform', d => `translate(${d.x}, ${d.y})`);
+  });
+
+  // Click on empty SVG → hide info
+  svg.on('click', () => {
+    document.getElementById('kg-info').classList.remove('visible');
+    node.select('circle').attr('stroke-width', 1.5);
+  });
+
+  // ====== Filter chips ======
+  const chips = document.querySelectorAll('.kg-chip');
+  const activeTypes = new Set(['person','org','event','place','document','claim']);
+
+  function applyFilter() {
+    node.classed('dim', d => !activeTypes.has(d.type));
+    link.classed('dim', d =>
+      !activeTypes.has(d.source.type) || !activeTypes.has(d.target.type)
+    );
+  }
+
+  chips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      const t = chip.dataset.type;
+      if (t === 'all') {
+        // Reset: activate everything
+        activeTypes.clear();
+        ['person','org','event','place','document','claim'].forEach(k => activeTypes.add(k));
+        document.querySelectorAll('.kg-chip').forEach(c => c.classList.add('active'));
+      } else {
+        document.querySelector('.kg-chip[data-type="all"]').classList.remove('active');
+        if (activeTypes.has(t)) {
+          activeTypes.delete(t);
+          chip.classList.remove('active');
+        } else {
+          activeTypes.add(t);
+          chip.classList.add('active');
+        }
+      }
+      applyFilter();
+    });
+  });
+
+  // ====== Info panel ======
+  const infoEl = document.getElementById('kg-info');
+  const infoTitle = document.getElementById('kg-info-title');
+  const infoDesc = document.getElementById('kg-info-desc');
+  const infoType = document.getElementById('kg-info-typelabel');
+  const infoConn = document.getElementById('kg-info-conn');
+  const infoCent = document.getElementById('kg-info-cent');
+  const infoDot = infoEl.querySelector('.kg-info-type .dot');
+
+  function showInfo(d) {
+    infoTitle.textContent = d.label.length < 22 ? KG_NODES.find(n=>n.id===d.id).label : d.label;
+    // Use full name for the title where it makes sense
+    const fullNames = {
+      shastri: 'Lal Bahadur Shastri', bhabha: 'Homi J. Bhabha', kosygin: 'Alexei Kosygin',
+      ayub: 'Muhammad Ayub Khan', chugh: 'Dr. R.N. Chugh', crowley: 'Robert T. Crowley',
+      douglas: 'Gregory Douglas', sarabhai: 'Vikram Sarabhai', pilot: 'Captain J.T. D\'Souza',
+      cia: 'Central Intelligence Agency', kgb: 'Soviet Committee for State Security',
+      aec: 'Atomic Energy Commission of India', pmo: 'Prime Minister\'s Office (India)',
+      bea: 'Bureau d\'Enquêtes et d\'Analyses',
+      tashkent_decl: 'Tashkent Declaration', shastri_death: 'Death of L.B. Shastri',
+      crash_101: 'Air India Flight 101 crash', air_speech: 'AIR broadcast, October 1965',
+      china_test: 'Chinese nuclear test, 1964',
+      tashkent: 'Tashkent, Uzbek SSR', mont_blanc: 'Mont Blanc, French Alps',
+      crow_book: '"Conversations with the Crow"',
+      cia_claim: 'The CIA-link claim'
+    };
+    infoTitle.textContent = fullNames[d.id] || d.label;
+    infoDesc.textContent = d.desc;
+    infoType.textContent = d.type;
+    infoDot.style.background = KG_TYPE_COLORS[d.type].stroke;
+    infoConn.textContent = d.degree;
+    // Modelled centrality value — degree normalised across the graph
+    const maxDegree = Math.max(...KG_NODES.map(n => n.degree));
+    infoCent.textContent = (d.degree / maxDegree).toFixed(2);
+    infoEl.classList.add('visible');
+  }
+
+  // Pre-select Shastri so the panel isn't empty on load
+  setTimeout(() => {
+    const shastriNode = KG_NODES.find(n => n.id === 'shastri');
+    showInfo(shastriNode);
+    node.filter(n => n.id === 'shastri').select('circle').attr('stroke-width', 3);
+  }, 1200);
+}
+
+// Trigger graph init on scroll into view
+const kgObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      initKnowledgeGraph();
+      kgObserver.disconnect();
+    }
+  });
+}, { threshold: 0.15 });
+const kgTarget = document.getElementById('kg-svg');
+if (kgTarget) kgObserver.observe(kgTarget);
+
+
+// ============================================================
+// CO-OCCURRENCE MATRIX
+// ============================================================
+// Modelled co-occurrence frequencies (count of corpus sentences in
+// which both entities appear). Shastri × CIA + Bhabha × CIA are the
+// densest cells, exposing the recurring narrative trio.
+const COOC_LABELS = ['Shastri', 'Bhabha', 'CIA', 'KGB', 'Tashkent', 'Mont Blanc', 'Crowley', 'Douglas', 'Nuclear prog.'];
+const COOC_DATA = [
+  // Shastri    Bhabha   CIA     KGB     Tashkent  MtBlanc Crowley  Douglas Nuclear
+  [   42,         28,    24,     11,       38,        2,      9,      11,    18  ], // Shastri
+  [   28,         51,    31,      4,        5,       46,     12,      14,    49  ], // Bhabha
+  [   24,         31,    47,      8,        7,       18,     22,      27,    37  ], // CIA
+  [   11,          4,     8,     14,       12,        0,      3,       4,     2  ], // KGB
+  [   38,          5,     7,     12,       40,        1,      2,       3,     4  ], // Tashkent
+  [    2,         46,    18,      0,        1,       42,      7,       9,    21  ], // MtBlanc
+  [    9,         12,    22,      3,        2,        7,     19,      24,     8  ], // Crowley
+  [   11,         14,    27,      4,        3,        9,     24,      26,    14  ], // Douglas
+  [   18,         49,    37,      2,        4,       21,      8,      14,    44  ]  // Nuclear
+];
+function buildCoOccurMatrix() {
+  const grid = document.getElementById('cooccur-grid');
+  if (!grid) return;
+  const N = COOC_LABELS.length;
+  // Set inline grid template
+  grid.style.gridTemplateColumns = `120px repeat(${N}, 1fr)`;
+  grid.style.gridTemplateRows = `60px repeat(${N}, 56px)`;
+
+  // Find max for normalisation
+  let max = 0;
+  for (let i = 0; i < N; i++) for (let j = 0; j < N; j++)
+    if (i !== j && COOC_DATA[i][j] > max) max = COOC_DATA[i][j];
+
+  // Top-left empty corner
+  const corner = document.createElement('div');
+  corner.className = 'cooccur-cell corner';
+  grid.appendChild(corner);
+
+  // Top column headers
+  COOC_LABELS.forEach(label => {
+    const c = document.createElement('div');
+    c.className = 'cooccur-cell label-col';
+    c.textContent = label;
+    grid.appendChild(c);
+  });
+
+  // Each row: row-header + cells
+  for (let i = 0; i < N; i++) {
+    const rh = document.createElement('div');
+    rh.className = 'cooccur-cell label-row';
+    rh.textContent = COOC_LABELS[i];
+    grid.appendChild(rh);
+
+    for (let j = 0; j < N; j++) {
+      const cell = document.createElement('div');
+      const v = COOC_DATA[i][j];
+      if (i === j) {
+        cell.className = 'cooccur-cell diagonal';
+        cell.textContent = v;
+      } else {
+        cell.className = 'cooccur-cell data';
+        // Heatmap intensity → background fill (red ramp)
+        const t = v / max;
+        const alpha = 0.05 + t * 0.65;
+        cell.style.background = `rgba(196, 48, 43, ${alpha.toFixed(3)})`;
+        cell.style.color = t > 0.4 ? '#f0c9c6' : '#5a5546';
+        cell.style.borderColor = t > 0.5 ? 'rgba(196, 48, 43, 0.6)' : 'var(--rule)';
+        cell.textContent = v;
+        cell.title = `${COOC_LABELS[i]} × ${COOC_LABELS[j]}: ${v} co-mentions`;
+      }
+      grid.appendChild(cell);
+    }
+  }
+}
+// Build it on scroll into view
+const coocObs = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      buildCoOccurMatrix();
+      coocObs.disconnect();
+    }
+  });
+}, { threshold: 0.1 });
+const coocEl = document.getElementById('cooccur-grid');
+if (coocEl) coocObs.observe(coocEl);
+
+
+// ============================================================
+// PIPELINE TABS — switch between annotation views
+// ============================================================
+document.querySelectorAll('.pipeline-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.pane;
+    document.querySelectorAll('.pipeline-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.pipeline-pane').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.querySelector(`.pipeline-pane[data-pane="${target}"]`).classList.add('active');
+  });
+});
+
+
+// ============================================================
+// CITATION NETWORK — the laundering diagram
+// ============================================================
+// Concentric layout: Douglas at the center, direct citers in the
+// inner ring, laundered citers in the outer ring.
+function initCitationNetwork() {
+  const svgEl = document.getElementById('citation-svg');
+  if (!svgEl) return;
+  const rect = svgEl.getBoundingClientRect();
+  const W = rect.width;
+  const H = rect.height || 480;
+  const cx = W / 2, cy = H / 2;
+
+  const svg = d3.select('#citation-svg').attr('viewBox', `0 0 ${W} ${H}`);
+
+  // Three rings: root, direct, laundered
+  const root = { id: 'douglas', label: 'Douglas (2013)', ring: 0, x: cx, y: cy, type: 'root' };
+  const directCount = 6;
+  const launderedCount = 14;
+
+  const inner = [];
+  const innerLabels = ['Wikispooks', 'Diplomacy & Beyond', 'Zee5 News', 'Wikipedia: Bhabha', 'ThePrint 2019', 'Conversations rev.'];
+  const innerR = Math.min(W, H) * 0.22;
+  for (let i = 0; i < directCount; i++) {
+    const a = (i / directCount) * Math.PI * 2 - Math.PI / 2;
+    inner.push({
+      id: 'd-' + i, label: innerLabels[i], ring: 1, type: 'direct',
+      x: cx + innerR * Math.cos(a),
+      y: cy + innerR * Math.sin(a)
+    });
+  }
+
+  const outer = [];
+  const outerLabels = ['Curious Indian', 'Indian Vagabond', 'ThePrint 2020', 'Unrevealed Files', 'Trav.Trade', 'Aviation blogs', 'YouTube ess.', 'Reddit threads', 'Substack pieces', 'X/Twitter', 'WhatsApp fwd.', 'TashkentFiles fan', 'BJP comm.', 'Indian Eagle'];
+  const outerR = Math.min(W, H) * 0.40;
+  for (let i = 0; i < launderedCount; i++) {
+    const a = (i / launderedCount) * Math.PI * 2 - Math.PI / 2;
+    outer.push({
+      id: 'l-' + i, label: outerLabels[i], ring: 2, type: 'laundered',
+      x: cx + outerR * Math.cos(a),
+      y: cy + outerR * Math.sin(a)
+    });
+  }
+
+  const allNodes = [root, ...inner, ...outer];
+
+  // Direct citations: every inner node cites root
+  const directLinks = inner.map(n => ({ source: root, target: n, kind: 'direct' }));
+
+  // Laundered: each outer node cites a random inner — a clean two-hop chain
+  const launderedLinks = outer.map((n, i) => ({
+    source: inner[i % inner.length], target: n, kind: 'laundered'
+  }));
+
+  // Draw links first so nodes sit on top
+  svg.append('g').selectAll('line')
+    .data([...directLinks, ...launderedLinks])
+    .join('line')
+    .attr('class', d => `citation-link ${d.kind}`)
+    .attr('x1', d => d.source.x).attr('y1', d => d.source.y)
+    .attr('x2', d => d.source.x).attr('y2', d => d.source.y)
+    .transition()
+    .duration(1200)
+    .delay((d, i) => 200 + i * 40)
+    .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+
+  // Nodes
+  const node = svg.append('g').selectAll('g')
+    .data(allNodes)
+    .join('g')
+    .attr('class', 'citation-node')
+    .attr('transform', d => `translate(${d.x}, ${d.y})`);
+
+  node.append('circle')
+    .attr('r', 0)
+    .attr('fill', d => d.type === 'root' ? '#c4302b' : '#15140f')
+    .attr('stroke', d => d.type === 'root' ? '#c4302b' : (d.type === 'direct' ? '#c4302b' : '#d4cfbd'))
+    .attr('stroke-width', d => d.type === 'root' ? 0 : 1.5)
+    .transition()
+    .duration(700)
+    .delay(d => d.type === 'root' ? 0 : (d.type === 'direct' ? 400 : 1000))
+    .attr('r', d => d.type === 'root' ? 14 : (d.type === 'direct' ? 8 : 5));
+
+  node.append('text')
+    .attr('dy', d => d.type === 'root' ? -22 : -12)
+    .attr('text-anchor', 'middle')
+    .style('opacity', 0)
+    .text(d => d.label)
+    .transition()
+    .duration(500)
+    .delay(d => d.type === 'root' ? 200 : (d.type === 'direct' ? 800 : 1500))
+    .style('opacity', 1);
+}
+
+const citObs = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      initCitationNetwork();
+      citObs.disconnect();
+    }
+  });
+}, { threshold: 0.15 });
+const citTarget = document.getElementById('citation-svg');
+if (citTarget) citObs.observe(citTarget);
+
+</script>
+
+</body>
+</html>
